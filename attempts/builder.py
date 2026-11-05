@@ -1,4 +1,3 @@
-"""Attempt Builder: groups related source Events into structured Attempts + narratives."""
 from __future__ import annotations
 
 import hashlib
@@ -12,7 +11,6 @@ from redactor.sanitizer import Redactor
 
 
 class AttemptBuilder:
-    """Groups related git, terminal, and Band events into structured Attempt objects."""
 
     REQUIRED_LLM_KEYS = [
         "hypothesis",
@@ -33,7 +31,6 @@ class AttemptBuilder:
         self.redactor = redactor or Redactor()
 
     def group_events_into_clusters(self, events: list[Event]) -> list[list[Event]]:
-        """Group related events by explicit `attempt_group_id` or by `(actor, site, day)` proximity."""
         if not events:
             return []
 
@@ -51,7 +48,6 @@ class AttemptBuilder:
         return [clusters_by_key[k] for k in cluster_order]
 
     def build_attempts_from_events(self, events: list[Event]) -> list[Attempt]:
-        """Sanitize events with Redactor, cluster related events, and build structured Attempts."""
         sanitized_events: list[Event] = []
         redaction_counts_by_event: dict[str, int] = {}
 
@@ -70,7 +66,6 @@ class AttemptBuilder:
         return attempts
 
     def build_single_attempt(self, cluster: list[Event], redactions_count: int = 0) -> Attempt:
-        """Build one Attempt from a cluster of related events using LLM with template fallback."""
         last_ev = cluster[-1]
         attempt_id = last_ev.attempt_group_id or self._MakeAttemptId(cluster)
 
@@ -115,7 +110,7 @@ class AttemptBuilder:
             action=str(structured.get("action") or "Applied configuration/code change"),
             files_components=merged_files,
             evidence_refs=evidence_refs,
-            outcome=outcome_val,  # type: ignore[arg-type]
+            outcome=outcome_val,
             reason=str(structured.get("reason") or "Observed system behavior after change"),
             conclusion=str(structured.get("conclusion") or "Further investigation needed"),
             next_suspect=str(structured.get("next_suspect") or "Upstream middleware"),
@@ -188,7 +183,6 @@ class AttemptBuilder:
 
     @staticmethod
     def _TemplateExtract(cluster: list[Event], files_components: list[str]) -> dict[str, Any]:
-        """Deterministic template fallback when LLM is offline or returns malformed JSON."""
         hypothesis = ""
         action = ""
         outcome = "inconclusive"

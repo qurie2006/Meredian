@@ -1,4 +1,3 @@
-"""Decision Engine: Action Normalizer, Recall + Judge, and Interception Policy."""
 from __future__ import annotations
 
 import json
@@ -12,7 +11,6 @@ from memory.client import HindsightMemoryWrapper, INTERCEPTOR_TOKEN_BUDGET
 
 
 def normalize_action(file_path: Optional[str], diff_or_command: str, conditions: Optional[str] = None) -> str:
-    """Convert raw file edit/diff or terminal command into a normalized semantic query."""
     raw = f"{file_path or ''} {diff_or_command}".strip()
     lower = raw.lower()
     tags: list[str] = []
@@ -39,7 +37,6 @@ def normalize_action(file_path: Optional[str], diff_or_command: str, conditions:
 
 
 class ActionChecker:
-    """Evaluates a proposed Shift B action against Hindsight memory and applies interception policy."""
 
     def __init__(
         self,
@@ -62,13 +59,11 @@ class ActionChecker:
         req: CheckActionRequest,
         global_memory_enabled: bool = True,
     ) -> tuple[str, Verdict]:
-        """Run Normalize -> Recall -> Judge -> Policy on a proposed action."""
         effective_memory_enabled = (
             req.memory_enabled if req.memory_enabled is not None else global_memory_enabled
         )
         normalized_query = normalize_action(req.file_path, req.diff_or_command, req.conditions)
 
-        # Memory OFF toggle (for before/after demo)
         if not effective_memory_enabled:
             verdict = Verdict(
                 verdict="new",
@@ -90,7 +85,6 @@ class ActionChecker:
         observations: list[dict[str, Any]] = recalled.get("observations", [])
         mem_status = recalled.get("memory_status", "ready")
 
-        # Empty bank (Day 1 baseline)
         if not facts:
             verdict = Verdict(
                 verdict="new",
@@ -152,7 +146,7 @@ class ActionChecker:
         matched_obs_texts = [o.get("belief", "") for o in observations if o.get("belief")]
 
         return Verdict(
-            verdict=v_type,  # type: ignore[arg-type]
+            verdict=v_type,
             confidence=max(0.0, min(1.0, float(judged_dict.get("confidence", 0.5)))),
             what_was_tried=str(judged_dict.get("what_was_tried", "")),
             outcome=str(judged_dict.get("outcome", "")),
@@ -174,12 +168,9 @@ class ActionChecker:
         facts: list[dict[str, Any]],
         observations: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        """Evidence-grounded deterministic judge used when offline or as structured fallback."""
         action_text = f"{req.file_path or ''} {req.diff_or_command}".lower()
         cond_text = (req.conditions or "").strip().lower()
 
-        # Check if the action is actually implementing the recommended Auth middleware fix
-        # or touching an unrelated new component (metrics, postgres, webhooks, kafka)
         if any(
             k in action_text
             for k in [
@@ -195,8 +186,6 @@ class ActionChecker:
                 "singleflight",
             ]
         ):
-            # Has `_SESSION_CACHE` / `TTLCache` already been tried AND failed? No—in Day 1-2 it's the
-            # recommended next step, and even on Day 5 it WORKED (not a failed dead end).
             failed_auth = [
                 f for f in facts
                 if "auth_middleware" in " ".join(f.get("files_components", [])).lower()
@@ -217,14 +206,12 @@ class ActionChecker:
                     "matched_attempt_id": None,
                 }
 
-        # Find best matching failed fact
         failed_facts = [f for f in facts if f.get("outcome") == "failed"]
         if not failed_facts:
             failed_facts = facts
 
         matched: Optional[dict[str, Any]] = None
 
-        # 1. Check Redis timeout / pool / keepalive family
         is_redis_action = any(
             k in action_text
             for k in ["redis_timeout", "redis-cli", "config set timeout", "redis_max_connections", "redis_keepalive", "config/redis.yml"]
@@ -238,7 +225,6 @@ class ActionChecker:
                 )
             ]
             if redis_failed:
-                # Prefer exact parameter match (timeout vs pool/connections) if available
                 if "max_connections" in action_text or "pool" in action_text:
                     pool_matches = [f for f in redis_failed if "max_connections" in f.get("text", "").lower() or "pool" in f.get("text", "").lower()]
                     matched = pool_matches[0] if pool_matches else redis_failed[0]
@@ -246,7 +232,6 @@ class ActionChecker:
                     timeout_matches = [f for f in redis_failed if "timeout" in f.get("text", "").lower()]
                     matched = timeout_matches[0] if timeout_matches else redis_failed[0]
 
-        # 2. Check Worker GC sweep interval family
         is_gc_action = "gc_sweep_interval" in action_text or "gc.collect" in action_text or "worker.py" in action_text
         if is_gc_action and matched is None:
             gc_facts = [
@@ -257,7 +242,6 @@ class ActionChecker:
                 failed_gc = [f for f in gc_facts if f.get("outcome") == "failed"]
                 matched = failed_gc[0] if failed_gc else gc_facts[0]
 
-        # 3. Check JWKS timeout family
         if "jwks" in action_text and "timeout" in action_text and matched is None:
             jwks_facts = [f for f in failed_facts if "jwks" in f.get("text", "").lower()]
             if jwks_facts:
@@ -279,7 +263,6 @@ class ActionChecker:
             }
 
         prior_cond = (matched.get("conditions") or "").strip().lower()
-        # Determine if conditions materially differ ("related" vs "repeat")
         has_new_conditions = bool(
             cond_text
             and cond_text != prior_cond
@@ -328,7 +311,6 @@ class ActionChecker:
         }
 
     def _ApplyPolicy(self, verdict: Verdict) -> Verdict:
-        """Apply policy thresholds: repeat -> interrupt, related -> soft_warning, new -> silent."""
         if verdict.verdict == "repeat" and verdict.confidence >= self.repeat_threshold:
             verdict.policy_action = "interrupt"
             ev_str = ", ".join(verdict.evidence) if verdict.evidence else "logged evidence"

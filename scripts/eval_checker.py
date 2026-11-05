@@ -1,4 +1,3 @@
-"""Phase 4 Evaluation Script: tests ActionChecker against the 15 labelled proposed actions."""
 from __future__ import annotations
 
 import json
@@ -19,7 +18,6 @@ def run_eval() -> None:
     builder = AttemptBuilder()
     replay = ReplayEngine(collector=collector, attempt_builder=builder, memory=memory)
 
-    # Seed Day 2 state of payments-memleak (Redis timeout, Redis pool, GC sweep conflict)
     replay_res = replay.replay_incident("payments-memleak", up_to_day=2, reset_first=True)
     print(
         f"Seeded `payments-memleak` (Day 2): {replay_res['events_replayed']} events -> "

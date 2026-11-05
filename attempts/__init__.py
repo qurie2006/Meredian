@@ -1,4 +1,3 @@
-"""Attempts package: schemas and LLM/template attempt builder."""
 from attempts.schemas import (
     Attempt,
     BankConfig,

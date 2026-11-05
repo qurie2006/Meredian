@@ -1,4 +1,3 @@
-"""Core Pydantic v2 schemas for Meredian across all five architecture layers."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -11,7 +10,6 @@ def utc_now_iso() -> str:
 
 
 class Event(BaseModel):
-    """Common event shape produced by Collector adapters (git, terminal, band)."""
 
     id: str
     source: Literal["git", "terminal", "band"]
@@ -26,7 +24,6 @@ class Event(BaseModel):
 
 
 class Attempt(BaseModel):
-    """Structured attempt record + plain-English narrative retained in Hindsight."""
 
     id: str
     incident_id: str
@@ -52,7 +49,6 @@ class Attempt(BaseModel):
 
 
 class BankConfig(BaseModel):
-    """Hindsight memory bank configuration."""
 
     bank_id: str
     mission: str = (
@@ -73,7 +69,6 @@ class BankConfig(BaseModel):
 
 
 class MemoryFact(BaseModel):
-    """Extracted atomic fact stored in a Hindsight bank."""
 
     id: str
     bank_id: str
@@ -96,7 +91,6 @@ class MemoryFact(BaseModel):
 
 
 class Observation(BaseModel):
-    """Consolidated higher-order belief formed across attempts in Hindsight."""
 
     id: str
     bank_id: str
@@ -112,7 +106,6 @@ class Observation(BaseModel):
 
 
 class Verdict(BaseModel):
-    """Structured output from the Action Checker / Judge."""
 
     verdict: Literal["repeat", "related", "new"]
     confidence: float = Field(ge=0.0, le=1.0)
@@ -134,7 +127,6 @@ class Verdict(BaseModel):
 
 
 class CheckActionRequest(BaseModel):
-    """Input payload for POST /check from VS Code extension, terminal hook, or web UI."""
 
     incident_id: str = "payments-memleak"
     actor: str = "Aarav"
@@ -147,7 +139,6 @@ class CheckActionRequest(BaseModel):
 
 
 class InterceptionRecord(BaseModel):
-    """Audit record stored in the Interception Log (including silent checks)."""
 
     id: str
     timestamp_utc: str = Field(default_factory=utc_now_iso)
@@ -166,7 +157,6 @@ class InterceptionRecord(BaseModel):
 
 
 class RuledOutItem(BaseModel):
-    """Item ruled out in the shift-start briefing."""
 
     hypothesis_or_action: str
     who: str
@@ -179,7 +169,6 @@ class RuledOutItem(BaseModel):
 
 
 class ConflictItem(BaseModel):
-    """Conflicting or condition-dependent outcomes across shifts/sites."""
 
     topic: str
     summary: str
@@ -189,7 +178,6 @@ class ConflictItem(BaseModel):
 
 
 class Briefing(BaseModel):
-    """State of the Problem produced by reflect() on the incident bank."""
 
     incident_id: str
     bank_id: str
@@ -210,7 +198,6 @@ class Briefing(BaseModel):
 
 
 class OverrideRequest(BaseModel):
-    """Payload when an engineer overrides a warning ('this time is different')."""
 
     incident_id: str = "payments-memleak"
     interception_id: Optional[str] = None
@@ -225,7 +212,6 @@ class OverrideRequest(BaseModel):
 
 
 class OverrideResponse(BaseModel):
-    """Response from POST /override showing the newly retained linked attempt."""
 
     override_id: str
     retained_attempt: Attempt
@@ -234,7 +220,6 @@ class OverrideResponse(BaseModel):
 
 
 class ReplayRequest(BaseModel):
-    """Request payload for POST /replay/start."""
 
     incident_id: str = "payments-memleak"
     up_to_day: int = 2

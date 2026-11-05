@@ -1,4 +1,3 @@
-"""Contract tests for the FastAPI endpoints in `api/main.py`."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,7 +13,6 @@ def test_full_api_lifecycle_and_contracts(tmp_path: Path) -> None:
     app = create_app(memory=mem, db_path=db_file, auto_seed=True)
     h_map = app.state.handlers
 
-    # 1. Health & Overview
     h = h_map["health"]()
     assert h["status"] == "ok"
     assert h["memory_enabled"] is True
@@ -23,7 +21,6 @@ def test_full_api_lifecycle_and_contracts(tmp_path: Path) -> None:
     assert ov["metrics"]["dead_ends_documented"] >= 3
     assert ov["metrics"]["secrets_redacted"] >= 5
 
-    # 2. Check repeat action -> interrupt + Band post
     chk = h_map["check_action"](
         CheckActionRequest(
             incident_id="payments-memleak",
@@ -38,7 +35,6 @@ def test_full_api_lifecycle_and_contracts(tmp_path: Path) -> None:
     assert chk.policy_action == "interrupt"
     assert chk.interception_id
 
-    # 3. Override the interception ("this time is different") -> creates retry_of link
     ovr = h_map["record_override"](
         OverrideRequest(
             incident_id="payments-memleak",
@@ -55,7 +51,6 @@ def test_full_api_lifecycle_and_contracts(tmp_path: Path) -> None:
     )
     assert ovr.retained_attempt.retry_of == chk.matched_attempt_id
 
-    # 4. Briefing & Timeline & Interceptions & Explorer
     brief = h_map["get_briefing"]("payments-memleak")
     assert len(brief.ruled_out) >= 3
     assert brief.leading_suspect
@@ -71,7 +66,6 @@ def test_full_api_lifecycle_and_contracts(tmp_path: Path) -> None:
     assert len(exp["facts"]) >= 2
     assert len(exp["observations"]) >= 1
 
-    # 5. Memory ON/OFF comparison
     cmp = h_map["compare_action"](
         CheckActionRequest(
             incident_id="payments-memleak",
@@ -85,7 +79,6 @@ def test_full_api_lifecycle_and_contracts(tmp_path: Path) -> None:
     assert cmp["without_memory"]["policy_action"] == "silent"
     assert cmp["with_memory"]["policy_action"] == "interrupt"
 
-    # 6. Replay Day 5 (root cause + cross-incident learning)
     rep5 = h_map["start_replay"](
         ReplayRequest(incident_id="payments-memleak", up_to_day=5, reset_first=True)
     )

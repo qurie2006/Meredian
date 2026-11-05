@@ -1,8 +1,3 @@
-"""Meredian Agent Client Protocol (ACP) Server for Band Desktop.
-
-Implements JSON-RPC 2.0 over stdio for the Agent Client Protocol (ACP) handshake
-and session streaming in Band Desktop.
-"""
 from __future__ import annotations
 
 import json
@@ -57,7 +52,6 @@ def handle_session_prompt(req_id: Any, params: dict[str, Any]) -> None:
     prompt_text = str(params.get("prompt") or "")
     session_id = params.get("sessionId", "meredian-session-01")
 
-    # Query Meredian FastAPI backend
     answer = ""
     try:
         with httpx.Client(timeout=4.0) as client:
@@ -79,7 +73,6 @@ def handle_session_prompt(req_id: Any, params: dict[str, Any]) -> None:
     except Exception as exc:
         answer = f"Meredian memory bot is active: {exc}"
 
-    # Stream text update notification to Band
     send_rpc(
         {
             "jsonrpc": "2.0",
@@ -93,7 +86,6 @@ def handle_session_prompt(req_id: Any, params: dict[str, Any]) -> None:
             },
         }
     )
-    # Acknowledge prompt request
     send_rpc({"jsonrpc": "2.0", "id": req_id, "result": {"status": "ok"}})
 
 
@@ -119,7 +111,6 @@ def main() -> None:
         elif method in ("session/prompt", "session/chat"):
             handle_session_prompt(req_id, params)
         elif req_id is not None:
-            # Fallback for unrecognized RPC method
             send_rpc({"jsonrpc": "2.0", "id": req_id, "result": {}})
 
 

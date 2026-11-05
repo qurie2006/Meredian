@@ -1,8 +1,3 @@
-"""Fallback Python File Watcher & Desktop/Terminal Notification Interceptor for Meredian.
-
-Watches tracked files in a directory (or runs a single check via `--check-file`) and calls
-Meredian's `POST /check` endpoint when changes are saved.
-"""
 from __future__ import annotations
 
 import argparse
@@ -18,7 +13,6 @@ TRACKED_SUFFIXES = {".yml", ".yaml", ".py", ".json", ".toml", ".conf"}
 
 
 def notify_desktop(title: str, message: str) -> None:
-    """Display a non-blocking Windows balloon/toast or terminal alert banner."""
     print("\n" + "=" * 76)
     print(f"🚨 {title}")
     print("-" * 76)

@@ -1,4 +1,3 @@
-"""Secret, credential, email, and internal hostname redactor for Meredian."""
 from __future__ import annotations
 
 import re
@@ -16,10 +15,8 @@ class RedactionResult:
 
 
 class Redactor:
-    """Sanitizes strings, dicts, and Event payloads before LLM processing or Hindsight retention."""
 
     PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
-        # Groq, OpenAI, Anthropic, GitHub, Slack, AWS keys
         (
             "api_key",
             re.compile(
@@ -27,7 +24,6 @@ class Redactor:
             ),
             "[REDACTED_API_KEY]",
         ),
-        # Bearer / JWT tokens
         (
             "token",
             re.compile(
@@ -35,13 +31,11 @@ class Redactor:
             ),
             "[REDACTED_TOKEN]",
         ),
-        # URI credentials e.g. redis://:secret@host or postgres://user:secret@host
         (
             "uri_password",
             re.compile(r"([a-zA-Z0-9+.-]+://[^:\s/@]*:)([^@\s]+)(@)"),
             r"\1[REDACTED_PASSWORD]\3",
         ),
-        # Key-value passwords/tokens/secrets in logs or config
         (
             "password",
             re.compile(
@@ -49,13 +43,11 @@ class Redactor:
             ),
             r"\1\2[REDACTED_SECRET]",
         ),
-        # Email addresses
         (
             "email",
             re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
             "[REDACTED_EMAIL]",
         ),
-        # Internal corporate hostnames (*.internal.*, *.corp, *.local)
         (
             "internal_host",
             re.compile(

@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Meredian Bash/Zsh Terminal Hook Interceptor
-# Usage: source interceptor/terminal-hook/meredian-hook.sh && meredian_exec "redis-cli CONFIG SET timeout 800"
 
 meredian_exec() {
   local cmd_text="$*"

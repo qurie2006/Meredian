@@ -1,9 +1,3 @@
-"""Local Hindsight Client & Engine compatible with `from hindsight_client import Hindsight`.
-
-Communicates with a running `hindsight-api` server at `base_url` (default http://localhost:8888)
-over HTTP when reachable, and seamlessly falls back to a local persistent Hindsight engine
-(backed by `.hindsight/banks.json`) when the daemon is not running or still starting.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -41,7 +35,6 @@ def _tokenize(text: str) -> list[str]:
 
 
 class Hindsight:
-    """Hindsight client supporting retain, recall, reflect, bank config, and async operation tracking."""
 
     _lock = threading.RLock()
 
@@ -109,7 +102,6 @@ class Hindsight:
         return banks[bank_id]
 
     def _TryHttp(self, method: str, path: str, payload: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
-        """Attempt to call a running `hindsight-api` server on `self.base_url` if reachable."""
         if os.getenv("HINDSIGHT_FORCE_EMBEDDED", "0") == "1":
             return None
         if self._http_available is False:
@@ -148,7 +140,6 @@ class Hindsight:
         directives: list[str],
         disposition: str = "moderately_skeptical",
     ) -> dict[str, Any]:
-        """Configure bank mission, hard directives, and disposition."""
         http_res = self._TryHttp(
             "POST",
             f"/v1/default/banks/{bank_id}/config",
@@ -174,7 +165,6 @@ class Hindsight:
         timestamp: Optional[str] = None,
         simulate_async_ms: int = 0,
     ) -> dict[str, Any]:
-        """Retain a narrative in `bank_id`, extract structured facts, and consolidate observations."""
         metadata = metadata or {}
         ts = timestamp or metadata.get("timestamp_utc") or _utc_now()
         op_hash = hashlib.sha1(f"{bank_id}:{ts}:{content}".encode("utf-8")).hexdigest()[:12]
@@ -229,7 +219,6 @@ class Hindsight:
         }
 
     def get_operation_status(self, bank_id: str, operation_id: Optional[str] = None) -> dict[str, Any]:
-        """Check whether asynchronous retain/consolidation operations in a bank have completed."""
         with self._lock:
             store = self._LoadStore()
             ops = store.get("operations", {})
@@ -272,7 +261,6 @@ class Hindsight:
         token_budget: int = 600,
         include_observations: bool = True,
     ) -> dict[str, Any]:
-        """Recall relevant facts and consolidated observations within a token budget."""
         http_res = self._TryHttp(
             "POST",
             f"/v1/default/banks/{bank_id}/recall",
@@ -338,7 +326,6 @@ class Hindsight:
         prompt: str,
         context: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
-        """Reflect over bank observations, facts, and directives to synthesize judgment or briefing."""
         http_res = self._TryHttp(
             "POST",
             f"/v1/default/banks/{bank_id}/reflect",
@@ -373,7 +360,6 @@ class Hindsight:
             }
 
     def get_bank_state(self, bank_id: str) -> dict[str, Any]:
-        """Return full bank state for Memory Explorer and inspection."""
         with self._lock:
             store = self._LoadStore()
             op_state = self.get_operation_status(bank_id)
@@ -393,7 +379,6 @@ class Hindsight:
             return result
 
     def reset_bank(self, bank_id: Optional[str] = None) -> None:
-        """Clear a specific bank or all banks (used by replay engine)."""
         with self._lock:
             store = self._LoadStore()
             if bank_id:
@@ -469,7 +454,6 @@ class Hindsight:
         if not overlap:
             return 0.0
 
-        # Boost domain-critical tokens like component names, config keys, file paths
         high_signal = {
             "redis", "timeout", "redis_timeout", "pool", "pool_size", "maxclients",
             "auth", "middleware", "session", "token", "cache", "lru", "eviction",
@@ -484,12 +468,10 @@ class Hindsight:
         return base_score + (signal_matches * 0.65) + (file_matches * 0.9)
 
     def _ConsolidateObservations(self, bank: dict[str, Any]) -> None:
-        """Background observation worker: consolidates facts into beliefs with evolution history."""
         facts: list[dict[str, Any]] = bank.get("facts", [])
         existing_obs_by_id = {o["id"]: o for o in bank.get("observations", [])}
         new_observations: list[dict[str, Any]] = []
 
-        # Group 1: Redis timeout / pool / connection config changes
         redis_facts = [
             f for f in facts
             if any(
@@ -558,7 +540,6 @@ class Hindsight:
                 }
             )
 
-        # Group 2: Auth middleware / session cache / token verification
         auth_facts = [
             f for f in facts
             if any(
@@ -617,7 +598,6 @@ class Hindsight:
                 }
             )
 
-        # Group 3: Cross-incident / retry storm / worker patterns
         other_facts = [
             f for f in facts
             if f not in redis_facts and f not in auth_facts

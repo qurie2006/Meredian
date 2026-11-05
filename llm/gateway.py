@@ -1,4 +1,3 @@
-"""Groq LLM Gateway with primary/fallback models, rate-limit backoff, and JSON repair."""
 from __future__ import annotations
 
 import json
@@ -12,7 +11,6 @@ import httpx
 
 
 class GroqGateway:
-    """Centralized LLM gateway for Meredian (`openai/gpt-oss-120b` -> fallback `qwen/qwen3-32b`)."""
 
     PRIMARY_MODEL = "openai/gpt-oss-120b"
     FALLBACK_MODEL = "qwen/qwen3-32b"
@@ -62,9 +60,6 @@ class GroqGateway:
         required_keys: Optional[list[str]] = None,
         fallback_builder: Optional[Callable[[], dict[str, Any]]] = None,
     ) -> dict[str, Any]:
-        """Request structured JSON from Groq, retry once with a repair prompt on malformed JSON,
-        and fall back to `fallback_builder` if all attempts fail.
-        """
         required_keys = required_keys or []
         if not self.is_live_configured or not self._IsGroqReachable():
             if fallback_builder:
@@ -92,7 +87,6 @@ class GroqGateway:
         if parsed is not None:
             return parsed
 
-        # Malformed JSON -> retry once with a repair prompt
         self.repair_count += 1
         repair_messages = [
             {
@@ -157,7 +151,6 @@ class GroqGateway:
         if not raw:
             return None
         cleaned = raw.strip()
-        # Strip ```json ... ``` fences if present
         fence_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, flags=re.DOTALL)
         if fence_match:
             cleaned = fence_match.group(1)

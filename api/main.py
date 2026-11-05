@@ -1,4 +1,3 @@
-"""Meredian FastAPI Application: Action Checker, Briefing Generator, Override Handler & Replay."""
 from __future__ import annotations
 
 import os
@@ -248,7 +247,6 @@ def create_app(
 
     @application.post("/check/compare")
     def compare_action_with_and_without_memory(req: CheckActionRequest) -> dict[str, Any]:
-        """Run the exact same Shift B action with Memory OFF vs Memory ON for the before/after demo."""
         req_off = req.model_copy(update={"memory_enabled": False})
         req_on = req.model_copy(update={"memory_enabled": True})
         query_off, verdict_off = checker.check(req_off, global_memory_enabled=False)
@@ -446,7 +444,6 @@ def create_app(
             },
         }
 
-    # Expose direct handler dispatch on `application.state.handlers` for synchronous sandbox tests
     application.state.handlers = {
         "health": health,
         "memory_status": memory_status,

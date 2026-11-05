@@ -1,4 +1,3 @@
-"""Band SDK / Room integration with Mock & Live adapter support."""
 from __future__ import annotations
 
 import os
@@ -17,7 +16,7 @@ class BandMessage(BaseModel):
     room_id: str = "payments-memleak-room"
     sender: str = "Meredian Agent"
     site: str = "System"
-    kind: str = "interception"  # interception | briefing | engineer_update
+    kind: str = "interception"
     incident_id: str = "payments-memleak"
     text: str
     timestamp_utc: str = Field(default_factory=utc_now_iso)
@@ -25,7 +24,6 @@ class BandMessage(BaseModel):
 
 
 class BandAgentClient:
-    """Connects Meredian to Band rooms to listen for shift updates and post stop warnings/briefings."""
 
     def __init__(
         self,
@@ -52,7 +50,6 @@ class BandAgentClient:
         incident_id: str = "payments-memleak",
         metadata: Optional[dict[str, Any]] = None,
     ) -> BandMessage:
-        """Ingest an engineer/agent update from the Band room and notify registered listeners."""
         msg = BandMessage(
             room_id=self.room_id,
             sender=sender,
@@ -75,7 +72,6 @@ class BandAgentClient:
         proposed_action: str,
         verdict: Verdict,
     ) -> Optional[BandMessage]:
-        """Post a repeat-attempt Stop message or soft warning to the Band room."""
         if verdict.policy_action == "silent" or not verdict.band_message:
             return None
 
@@ -99,7 +95,6 @@ class BandAgentClient:
         return msg
 
     def post_briefing(self, briefing: Briefing) -> BandMessage:
-        """Post the shift-start State of the Problem briefing to the Band room."""
         formatted = BriefingGenerator.format_for_band(briefing)
         msg = BandMessage(
             room_id=self.room_id,

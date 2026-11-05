@@ -1,4 +1,3 @@
-"""Briefing Generator: calls Hindsight `reflect` to produce the shift-start State of the Problem."""
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -14,7 +13,6 @@ from memory.client import HindsightMemoryWrapper
 
 
 class BriefingGenerator:
-    """Produces the State of the Problem briefing from Hindsight reflections and observations."""
 
     def __init__(
         self,
@@ -137,7 +135,6 @@ class BriefingGenerator:
 
     @staticmethod
     def _DetectConflicts(facts: list[dict[str, Any]]) -> list[ConflictItem]:
-        """Detect conflicting outcomes on the same file/component across shifts or load conditions."""
         by_file: dict[str, list[dict[str, Any]]] = {}
         for f in facts:
             for comp in f.get("files_components", []):
@@ -175,7 +172,6 @@ class BriefingGenerator:
 
     @staticmethod
     def format_for_band(briefing: Briefing) -> str:
-        """Render the State of the Problem briefing as a concise Band room message."""
         lines = [
             f"📋 **Meredian Shift-Start Briefing — `{briefing.incident_id}` (Day {briefing.day})**",
             f"**Summary:** {briefing.headline}",

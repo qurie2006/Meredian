@@ -1,4 +1,3 @@
-"""Replay Engine: feeds synthetic incident events through Collector -> Redactor -> Attempt Builder -> Hindsight."""
 from __future__ import annotations
 
 import json
@@ -13,7 +12,6 @@ from memory.client import HindsightMemoryWrapper
 
 
 class ReplayEngine:
-    """Deterministic time-ordered replay engine supporting Day 0 (baseline), Day 1, Day 2, and Day 5."""
 
     def __init__(
         self,
@@ -73,7 +71,6 @@ class ReplayEngine:
         up_to_day: int = 2,
         reset_first: bool = True,
     ) -> dict[str, Any]:
-        """Replay events up to `up_to_day` (0 = empty bank baseline, 1 = Day 1, 2 = Day 2, 5 = Day 5)."""
         if reset_first:
             self.memory.reset(incident_id)
             if self.band:
@@ -89,7 +86,6 @@ class ReplayEngine:
                 "redactions_blocked": 0,
             }
 
-        # Mirror Band events into the Band room feed
         if self.band:
             for ev in events:
                 if ev.source == "band" and ev.payload.get("text"):
@@ -105,9 +101,8 @@ class ReplayEngine:
         for att in attempts:
             op = self.memory.retain_attempt(att, also_retain_team_pattern=(att.day >= 5))
             att.operation_id = op.get("operation_id")
-            att.operation_status = op.get("status", "completed")  # type: ignore[assignment]
+            att.operation_status = op.get("status", "completed")
 
-        # On Day 5, also seed cross-incident learnings from the other synthetic incidents
         if up_to_day >= 5:
             for other_inc in ("auth-token-storm", "redis-failover-stall"):
                 if other_inc != incident_id:

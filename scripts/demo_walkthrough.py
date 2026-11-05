@@ -1,9 +1,3 @@
-"""One-Command Stage Demo Script for Meredian.
-
-Demonstrates the visible learning curve across Day 1 (baseline), Day 2 (Shift A -> Shift B
-interception + consolidated Redis observation + cross-site conflict), and Day 5 (root cause
-confirmed + cross-incident pattern insights).
-"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -33,7 +27,6 @@ def run_demo() -> None:
     print("MEREDIAN STAGE DEMO: FOLLOW-THE-SUN LEARNING CURVE (DAY 1 -> DAY 2 -> DAY 5)")
     print("=" * 78)
 
-    # Stage 1: Day 1 Empty Bank Baseline
     h["start_replay"](ReplayRequest(incident_id="payments-memleak", up_to_day=0, reset_first=True))
     v_day0 = h["check_action"](action_req)
     print("\n[STAGE 1 — DAY 1 BASELINE (Without Prior Shift Memory)]")
@@ -41,7 +34,6 @@ def run_demo() -> None:
     print(f"  Verdict / Policy: {v_day0.verdict.upper()} / {v_day0.policy_action.upper()}")
     print(f"  Note            : {v_day0.what_was_tried}")
 
-    # Stage 2: Day 2 After Shift A (Seattle) & Shift C (London)
     rep2 = h["start_replay"](ReplayRequest(incident_id="payments-memleak", up_to_day=2, reset_first=True))
     v_day2 = h["check_action"](action_req)
     print("\n[STAGE 2 — DAY 2 (After Seattle & London Shifts Replayed)]")
@@ -52,7 +44,6 @@ def run_demo() -> None:
     print(f"  Observation     : {v_day2.matched_observations[0]}")
     print(f"  Briefing Suspect: {rep2['briefing']['leading_suspect']}")
 
-    # Stage 3: Override ("This time is different")
     ovr = h["record_override"](
         OverrideRequest(
             incident_id="payments-memleak",
@@ -69,7 +60,6 @@ def run_demo() -> None:
     print("\n[STAGE 3 — OVERRIDE & FEEDBACK LOOP]")
     print(f"  Retained Retry  : {ovr.retained_attempt.id} (retry_of={ovr.retained_attempt.retry_of})")
 
-    # Stage 4: Day 5 Root Cause & Cross-Incident Patterns
     rep5 = h["start_replay"](ReplayRequest(incident_id="payments-memleak", up_to_day=5, reset_first=True))
     exp5 = h["explore_memory"]("payments-memleak")
     print("\n[STAGE 4 — DAY 5 (Root Cause Confirmed + Cross-Incident Learning)]")

@@ -1,14 +1,3 @@
-<#
-.SYNOPSIS
-Meredian PowerShell Terminal Hook Interceptor.
-Wraps selected commands (such as `redis-cli CONFIG SET timeout 800`) to query Meredian's
-`POST /check` endpoint before execution.
-
-.EXAMPLE
-. .\interceptor\terminal-hook\meredian-hook.ps1
-Invoke-MeredianCommand "redis-cli CONFIG SET timeout 800" -NonInteractive
-#>
-
 function Invoke-MeredianCommand {
     param(
         [Parameter(Mandatory = $true)]

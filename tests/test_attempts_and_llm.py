@@ -1,4 +1,3 @@
-"""Unit tests for LLM Gateway malformed JSON repair/fallback and Attempt Builder."""
 from __future__ import annotations
 
 from attempts.builder import AttemptBuilder
@@ -8,9 +7,7 @@ from llm.gateway import GroqGateway
 
 def test_llm_gateway_repairs_malformed_json_on_retry() -> None:
     responses = [
-        # First call returns broken JSON
         "Here is the output: {hypothesis: 'missing quotes', broken",
-        # Repair call returns valid JSON
         '{"hypothesis": "Redis timeout churn", "action": "Raised timeout", "files_components": ["config/redis.yml"], "outcome": "failed", "reason": "Still leaked", "conclusion": "Not Redis", "next_suspect": "Auth middleware"}',
     ]
 

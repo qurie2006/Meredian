@@ -1,4 +1,3 @@
-"""Unit tests for the Redactor security layer."""
 from __future__ import annotations
 
 from attempts.schemas import Event

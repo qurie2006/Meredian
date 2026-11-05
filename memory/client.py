@@ -1,9 +1,3 @@
-"""Hindsight client wrapper for Meredian.
-
-Manages isolated per-incident banks (e.g. `payments-memleak`) plus the shared
-cross-incident bank (`meredian-team-patterns`), enforces bank mission/directives/disposition,
-tracks asynchronous retain operations, and exposes token-budgeted recall & reflection.
-"""
 from __future__ import annotations
 
 import os
@@ -19,7 +13,6 @@ BRIEFING_TOKEN_BUDGET = 1600
 
 
 class HindsightMemoryWrapper:
-    """High-level Hindsight memory interface for Meredian."""
 
     def __init__(
         self,
@@ -32,7 +25,6 @@ class HindsightMemoryWrapper:
         self.ensure_bank_configured(TEAM_PATTERNS_BANK)
 
     def ensure_bank_configured(self, bank_id: str) -> BankConfig:
-        """Configure a bank's mission, hard directives, and skeptical disposition."""
         config = BankConfig(bank_id=bank_id)
         if bank_id not in self._configured_banks:
             self.client.configure_bank(
@@ -50,7 +42,6 @@ class HindsightMemoryWrapper:
         also_retain_team_pattern: bool = False,
         simulate_async_ms: int = 0,
     ) -> dict[str, Any]:
-        """Retain an Attempt's narrative and structured metadata in the incident bank."""
         bank_id = attempt.incident_id
         self.ensure_bank_configured(bank_id)
 
@@ -83,7 +74,6 @@ class HindsightMemoryWrapper:
             simulate_async_ms=simulate_async_ms,
         )
 
-        # Cross-incident pattern bank retention when day >= 5 or explicitly marked
         if also_retain_team_pattern or attempt.day >= 5 or attempt.outcome == "worked":
             self.ensure_bank_configured(TEAM_PATTERNS_BANK)
             pattern_narrative = (
@@ -105,7 +95,6 @@ class HindsightMemoryWrapper:
         normalized_query: str,
         token_budget: int = INTERCEPTOR_TOKEN_BUDGET,
     ) -> dict[str, Any]:
-        """Recall prior attempts and observations within a small token budget for fast interception."""
         self.ensure_bank_configured(incident_id)
         incident_recall = self.client.recall(
             bank_id=incident_id,
@@ -148,7 +137,6 @@ class HindsightMemoryWrapper:
         incident_id: str,
         token_budget: int = BRIEFING_TOKEN_BUDGET,
     ) -> dict[str, Any]:
-        """Reflect over the incident bank (and cross-incident patterns) with a larger token budget."""
         self.ensure_bank_configured(incident_id)
         reflection = self.client.reflect(
             bank_id=incident_id,
@@ -168,11 +156,9 @@ class HindsightMemoryWrapper:
         incident_id: str,
         operation_id: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Return whether the incident bank has pending asynchronous retain/consolidation jobs."""
         return self.client.get_operation_status(bank_id=incident_id, operation_id=operation_id)
 
     def search_explorer(self, incident_id: str, query: str = "") -> dict[str, Any]:
-        """Power the Memory Explorer UI: search facts, observations, and belief evolution over time."""
         bank_state = self.client.get_bank_state(incident_id)
         team_state = self.client.get_bank_state(TEAM_PATTERNS_BANK)
         if not query.strip():
@@ -197,7 +183,6 @@ class HindsightMemoryWrapper:
         return recalled
 
     def reset(self, incident_id: Optional[str] = None) -> None:
-        """Reset one incident bank or all banks."""
         self.client.reset_bank(incident_id)
         if incident_id is None:
             self._configured_banks.clear()
@@ -205,7 +190,6 @@ class HindsightMemoryWrapper:
 
     @staticmethod
     def build_narrative(attempt: Attempt) -> str:
-        """Construct a plain-English narrative paragraph from structured Attempt fields."""
         refs = ", ".join(attempt.evidence_refs) if attempt.evidence_refs else "unreferenced log"
         comps = ", ".join(attempt.files_components) if attempt.files_components else "service config"
         cond_clause = f" under conditions [{attempt.conditions}]" if attempt.conditions else ""
@@ -220,7 +204,6 @@ class HindsightMemoryWrapper:
 
 
 class FakeMemory(HindsightMemoryWrapper):
-    """Isolated Hindsight wrapper backed by a temporary file for fast, deterministic tests."""
 
     def __init__(self, storage_path: str = ".hindsight/test_banks.json") -> None:
         super().__init__(base_url="http://localhost:8888", storage_path=storage_path)

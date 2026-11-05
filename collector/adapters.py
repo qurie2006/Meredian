@@ -1,4 +1,3 @@
-"""Source adapters (`git_adapter`, `terminal_adapter`, `band_adapter`) and event grouping."""
 from __future__ import annotations
 
 import uuid
@@ -8,7 +7,6 @@ from attempts.schemas import Event, utc_now_iso
 
 
 class GitAdapter:
-    """Normalizes git commits and diffs into the common Event schema."""
 
     @staticmethod
     def to_event(raw: dict[str, Any], default_incident_id: str = "payments-memleak") -> Event:
@@ -35,7 +33,6 @@ class GitAdapter:
 
 
 class TerminalAdapter:
-    """Normalizes terminal session logs and command outputs into the common Event schema."""
 
     @staticmethod
     def to_event(raw: dict[str, Any], default_incident_id: str = "payments-memleak") -> Event:
@@ -60,7 +57,6 @@ class TerminalAdapter:
 
 
 class BandAdapter:
-    """Normalizes Band room messages into the common Event schema."""
 
     @staticmethod
     def to_event(raw: dict[str, Any], default_incident_id: str = "payments-memleak") -> Event:
@@ -92,7 +88,6 @@ class BandAdapter:
 
 
 class CollectorPipeline:
-    """Routes raw source payloads through the appropriate adapter and orders by timestamp."""
 
     def __init__(self) -> None:
         self.git = GitAdapter()
@@ -114,7 +109,6 @@ class CollectorPipeline:
         raw_events: list[Event | dict[str, Any]],
         default_incident_id: str = "payments-memleak",
     ) -> dict[str, list[Event]]:
-        """Convert raw items into Events, group by `incident_id`, and sort by `timestamp_utc`."""
         grouped: dict[str, list[Event]] = {}
         for item in raw_events:
             ev = self.normalize_event(item, default_incident_id=default_incident_id)

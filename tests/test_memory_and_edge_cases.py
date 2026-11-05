@@ -1,4 +1,3 @@
-"""Tests for Hindsight Memory layer and all Section 5 Edge Cases."""
 from __future__ import annotations
 
 import time

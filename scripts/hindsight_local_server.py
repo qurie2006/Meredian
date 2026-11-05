@@ -1,9 +1,3 @@
-"""Standalone Local Hindsight-compatible HTTP Server on port 8888.
-
-Can be started via `python scripts/hindsight_local_server.py` when the external
-`hindsight-api` binary is not installed, providing the exact HTTP endpoints at
-http://localhost:8888 (`/v1/default/banks/{bank_id}/memories`, `/recall`, `/reflect`, `/config`).
-"""
 from __future__ import annotations
 
 import os
@@ -14,7 +8,7 @@ from pydantic import BaseModel
 import uvicorn
 
 os.environ["HINDSIGHT_FORCE_EMBEDDED"] = "1"
-from hindsight_client import Hindsight  # noqa: E402
+from hindsight_client import Hindsight
 
 app = FastAPI(title="Local Hindsight API Server", version="0.1.0")
 engine = Hindsight(base_url="http://localhost:8888")

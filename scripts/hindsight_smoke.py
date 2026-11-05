@@ -1,12 +1,3 @@
-"""Phase 1 Smoke Test: verifies `hindsight_client.Hindsight` and `HindsightMemoryWrapper`.
-
-Tests:
-1. Exact user snippet (`client.retain` + `client.recall` against `http://localhost:8888`).
-2. `HindsightMemoryWrapper` bank configuration (mission, directives, disposition).
-3. Asynchronous operation status tracking (`pending` -> `completed`).
-4. Token-budgeted recall (small budget vs briefing budget) and automatic Observation consolidation.
-5. Recall latency measurement.
-"""
 from __future__ import annotations
 
 import time
@@ -18,7 +9,6 @@ from memory.client import FakeMemory
 def run_smoke_test() -> None:
     print("=== Phase 1: Hindsight Local Smoke Test ===")
 
-    # 1. Verify exact user snippet from prompt
     client = Hindsight(base_url="http://localhost:8888", storage_path=".hindsight/smoke_test.json")
     client.reset_bank("test")
     client.retain(bank_id="test", content="Maya raised the Redis timeout; the memory spike persisted.")
@@ -26,7 +16,6 @@ def run_smoke_test() -> None:
     assert len(recall_res["facts"]) == 1, f"Expected 1 recalled fact, got {recall_res}"
     print(f"[PASS] Direct Hindsight snippet recall: {recall_res['facts'][0]['text']}")
 
-    # 2. Verify HindsightMemoryWrapper retain -> consolidate observations -> recall -> reflect
     wrapper = FakeMemory(storage_path=".hindsight/smoke_wrapper.json")
     a1 = Attempt(
         id="att-smoke-1",
@@ -63,7 +52,6 @@ def run_smoke_test() -> None:
         next_suspect="Auth middleware session cache",
     )
 
-    # Test async retain tracking
     op1 = wrapper.retain_attempt(a1, simulate_async_ms=50)
     status_immediate = wrapper.get_memory_status("payments-memleak", op1["operation_id"])
     assert status_immediate["memory_status"] == "updating"

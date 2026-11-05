@@ -137,7 +137,6 @@ async function evaluateDocument(
       }
     }
   } catch {
-    // Silent fallback if local API is not running
   }
 }
 

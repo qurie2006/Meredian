@@ -1,8 +1,3 @@
-"""Live Band SDK runner for Meredian (`pip install band-sdk`).
-
-Connects Meredian to Band rooms via WebSocket when `band-sdk` is installed and
-`BAND_AGENT_ID` + `BAND_API_KEY` (or `agent_config.yaml`) are configured.
-"""
 from __future__ import annotations
 
 import os

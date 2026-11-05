@@ -1,4 +1,3 @@
-"""SQLite persistence layer for Meredian API (events, attempts, interception log, settings)."""
 from __future__ import annotations
 
 import json
@@ -11,7 +10,6 @@ from attempts.schemas import Attempt, Event, InterceptionRecord
 
 
 class StateStore:
-    """Thread-safe SQLite store for events, attempts, interceptions, and runtime toggles."""
 
     def __init__(self, db_path: str = "meredian_state.db") -> None:
         self.db_path = db_path
