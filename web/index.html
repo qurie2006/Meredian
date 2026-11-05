@@ -1,0 +1,2407 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meredian — Follow-the-Sun Institutional Memory</title>
+
+  <!-- Typography: Poppins (Headings), Inter Regular (Paragraphs), Inter Italic (Citations/Quotes), Satoshi Medium (UI Accents) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@500,700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      /* Charcoal Gray / Black Foundations */
+      --charcoal-void: #0a0b0e;
+      --charcoal-base: #101216;
+      --charcoal-elevated: #171a20;
+      --glass-surface: rgba(22, 25, 31, 0.64);
+      --glass-surface-strong: rgba(28, 32, 40, 0.78);
+      --glass-surface-subtle: rgba(18, 20, 25, 0.50);
+
+      /* Moonlight Silver Spectrum (mapped to UI tokens) */
+      --ice-bright: #f4f7fb;
+      --ice-main: #dde3ec;
+      --ice-muted: #a6b0bf;
+      --ice-dim: #798394;
+      --ice-border: rgba(213, 220, 230, 0.12);
+      --ice-border-hover: rgba(230, 236, 245, 0.28);
+      --ice-glow: rgba(213, 220, 230, 0.08);
+
+      /* Signal Red Tints (mapped to UI accent tokens) */
+      --marigold: #ff2a36;
+      --marigold-soft: #ff6e76;
+      --marigold-deep: #d91b26;
+      --marigold-tint: rgba(255, 42, 54, 0.11);
+      --marigold-tint-strong: rgba(255, 42, 54, 0.19);
+      --marigold-border: rgba(255, 42, 54, 0.40);
+      --marigold-glow: rgba(255, 42, 54, 0.25);
+
+      /* Typography Families */
+      --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-quote: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-accent: 'Satoshi', 'Inter', sans-serif;
+
+      /* Motion Curves */
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      /* Generous Desktop Fluid Base Scale: 18px on laptops up to 21px on large monitors */
+      font-size: clamp(18px, 1.12vw, 21px);
+    }
+
+    body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--charcoal-void);
+      color: var(--ice-main);
+      font-family: var(--font-body);
+      font-weight: 400;
+      font-size: 1rem;
+      line-height: 1.65;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* =====================================================================
+       OUTSIDE-TO-INSIDE SHRINKING CIRCLE BLUR REVEAL ON PAGE LOAD / REFRESH
+       Inside the circle = blurred; Outside the circle = sharp & unblurred.
+       As the circle shrinks from outer corners -> center (0px), the site
+       progressively clears from the outside inward.
+       ===================================================================== */
+    .intro-blur-veil {
+      --veil-inner: 145vmax;
+      --veil-r: 150vmax;
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      pointer-events: none;
+      backdrop-filter: blur(30px) saturate(135%);
+      -webkit-backdrop-filter: blur(30px) saturate(135%);
+      background: radial-gradient(circle at 50% 50%,
+          rgba(10, 12, 16, 0.56) 0%,
+          rgba(18, 21, 27, 0.34) 72%,
+          rgba(255, 42, 54, 0.06) 100%);
+      -webkit-mask-image: radial-gradient(circle at 50% 50%,
+          #000000 0px,
+          #000000 var(--veil-inner),
+          transparent var(--veil-r));
+      mask-image: radial-gradient(circle at 50% 50%,
+          #000000 0px,
+          #000000 var(--veil-inner),
+          transparent var(--veil-r));
+      will-change: mask-image, -webkit-mask-image, opacity;
+    }
+
+    .intro-iris-ring {
+      --ring-d: 300vmax;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: var(--ring-d);
+      height: var(--ring-d);
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      z-index: 9999;
+      pointer-events: none;
+      border: 1.5px solid rgba(226, 232, 240, 0.30);
+      box-shadow:
+        0 0 36px rgba(255, 42, 54, 0.20),
+        inset 0 0 28px rgba(213, 220, 230, 0.12);
+      will-change: width, height, opacity;
+    }
+
+    /* =====================================================================
+       AMBIENT CHARCOAL + MOONLIGHT SILVER + SIGNAL RED STAGE & RIPPLE CANVAS
+       ===================================================================== */
+    .ambient-stage {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 82% 12%, rgba(255, 42, 54, 0.08), transparent 42%),
+        radial-gradient(circle at 18% 85%, rgba(213, 220, 230, 0.065), transparent 48%),
+        linear-gradient(180deg, #0d0f13 0%, #090a0d 100%);
+    }
+
+    .ambient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(105px);
+      opacity: 0.50;
+      animation: floatOrb 28s var(--ease-out-expo) infinite alternate;
+    }
+
+    .ambient-orb.marigold {
+      width: 560px;
+      height: 560px;
+      top: -190px;
+      right: 5%;
+      background: radial-gradient(circle, rgba(255, 42, 54, 0.15), transparent 70%);
+    }
+
+    .ambient-orb.charcoal-silver {
+      width: 720px;
+      height: 720px;
+      bottom: -260px;
+      left: 8%;
+      background: radial-gradient(circle, rgba(206, 216, 230, 0.10), transparent 70%);
+      animation-delay: -9s;
+    }
+
+    .ambient-orb.ice {
+      width: 520px;
+      height: 520px;
+      top: 36%;
+      left: 44%;
+      background: radial-gradient(circle, rgba(213, 220, 230, 0.06), transparent 70%);
+      animation-delay: -16s;
+    }
+
+    #rippleCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .ambient-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(220, 236, 252, 0.024) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(220, 236, 252, 0.024) 1px, transparent 1px);
+      background-size: 72px 72px;
+      mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.72) 20%, transparent 86%);
+    }
+
+    @keyframes floatOrb {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+
+      100% {
+        transform: translate3d(-36px, 28px, 0) scale(1.08);
+      }
+    }
+
+    /* Typography System */
+    h1,
+    h2,
+    h3,
+    h4,
+    .heading {
+      font-family: var(--font-heading);
+      color: var(--ice-bright);
+      letter-spacing: -0.025em;
+      line-height: 1.25;
+      font-weight: 600;
+    }
+
+    h2 {
+      font-size: 1.38rem;
+    }
+
+    h3 {
+      font-size: 1.16rem;
+    }
+
+    h4 {
+      font-size: 1.05rem;
+    }
+
+    p,
+    .paragraph {
+      font-family: var(--font-body);
+      font-weight: 400;
+      font-size: 1rem;
+      color: var(--ice-muted);
+    }
+
+    blockquote,
+    cite,
+    .quote-text {
+      font-family: var(--font-quote);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1.02rem;
+      color: var(--ice-bright);
+      line-height: 1.62;
+      letter-spacing: -0.005em;
+    }
+
+    .ui-accent,
+    button,
+    .badge,
+    th,
+    .kicker {
+      font-family: var(--font-accent);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+    }
+
+    .mono-ref {
+      font-family: var(--font-accent);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.80rem;
+      color: var(--ice-main);
+    }
+
+    /* Full-Viewport Desktop Shell */
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 348px minmax(0, 1fr);
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* Frosted Charcoal Glass Sidebar Rail */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100vh;
+      padding: 32px 26px;
+      background: rgba(12, 14, 18, 0.76);
+      backdrop-filter: blur(28px) saturate(140%);
+      -webkit-backdrop-filter: blur(28px) saturate(140%);
+      border-right: 1px solid var(--ice-border);
+      overflow-y: auto;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 0 6px 26px;
+      border-bottom: 1px solid var(--ice-border);
+    }
+
+    .brand-mark {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(255, 42, 54, 0.24), rgba(22, 25, 31, 0.92));
+      border: 1px solid var(--marigold-border);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 26px var(--marigold-glow);
+      flex-shrink: 0;
+    }
+
+    .brand-mark::after {
+      content: "";
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--marigold);
+      box-shadow: 0 0 14px var(--marigold);
+      animation: pulseBeacon 2.8s ease-in-out infinite;
+    }
+
+    @keyframes pulseBeacon {
+
+      0%,
+      100% {
+        transform: scale(0.92);
+        opacity: 0.85;
+      }
+
+      50% {
+        transform: scale(1.18);
+        opacity: 1;
+      }
+    }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.45rem;
+      font-weight: 600;
+      color: var(--ice-bright);
+      letter-spacing: -0.03em;
+    }
+
+    .brand-sub {
+      font-family: var(--font-accent);
+      font-size: 0.76rem;
+      color: var(--ice-muted);
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    /* Incident Selector Block */
+    .sidebar-section-label {
+      font-size: 0.78rem;
+      color: var(--ice-dim);
+      margin: 24px 6px 10px;
+    }
+
+    .glass-select-wrap {
+      position: relative;
+    }
+
+    select.glass-select {
+      width: 100%;
+      appearance: none;
+      background: var(--glass-surface-strong);
+      color: var(--ice-bright);
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      padding: 13px 40px 13px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--ice-border);
+      cursor: pointer;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: border-color 0.25s var(--ease-out-expo), box-shadow 0.25s var(--ease-out-expo);
+      outline: none;
+    }
+
+    select.glass-select option {
+      background: #11141a;
+      color: var(--ice-bright);
+    }
+
+    select.glass-select:hover,
+    select.glass-select:focus {
+      border-color: var(--ice-border-hover);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .glass-select-wrap::after {
+      content: "▾";
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ice-muted);
+      pointer-events: none;
+      font-size: 0.95rem;
+    }
+
+    /* Sidebar Navigation */
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .nav-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ice-muted);
+      font-size: 0.85rem;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.28s var(--ease-out-expo);
+    }
+
+    .nav-btn .nav-idx {
+      color: var(--ice-dim);
+      font-size: 0.80rem;
+      min-width: 24px;
+      transition: color 0.28s var(--ease-out-expo);
+    }
+
+    .nav-btn:hover {
+      color: var(--ice-bright);
+      background: rgba(220, 236, 252, 0.06);
+    }
+
+    .nav-btn.active {
+      color: var(--ice-bright);
+      background: linear-gradient(90deg, rgba(255, 42, 54, 0.14) 0%, rgba(213, 220, 230, 0.04) 100%);
+      border-color: rgba(255, 42, 54, 0.32);
+      box-shadow: inset 3px 0 0 var(--marigold), 0 8px 24px rgba(0, 0, 0, 0.30);
+    }
+
+    .nav-btn.active .nav-idx {
+      color: var(--marigold-soft);
+    }
+
+    /* Follow-the-Sun Shift Telemetry Footer */
+    .shift-footer {
+      margin-top: 22px;
+      padding: 18px;
+      border-radius: 14px;
+      background: var(--glass-surface-subtle);
+      border: 1px solid var(--ice-border);
+    }
+
+    .shift-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.80rem;
+      padding: 6px 0;
+      color: var(--ice-muted);
+    }
+
+    .shift-row.active-shift {
+      color: var(--ice-bright);
+    }
+
+    .dot-live {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--marigold);
+      box-shadow: 0 0 10px var(--marigold);
+      margin-right: 8px;
+    }
+
+    .dot-idle {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ice-dim);
+      margin-right: 8px;
+    }
+
+    /* Right Workspace Area */
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Top Glass Command Bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 22px 42px;
+      background: rgba(12, 14, 18, 0.60);
+      backdrop-filter: blur(22px) saturate(135%);
+      -webkit-backdrop-filter: blur(22px) saturate(135%);
+      border-bottom: 1px solid var(--ice-border);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .topbar-left h1 {
+      font-size: 1.68rem;
+      font-weight: 600;
+    }
+
+    .topbar-left p {
+      font-size: 0.98rem;
+      color: var(--ice-muted);
+      margin-top: 3px;
+    }
+
+    .topbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* Segmented Replay Scrubber */
+    .scrubber {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px;
+      border-radius: 12px;
+      background: rgba(16, 19, 24, 0.86);
+      border: 1px solid var(--ice-border);
+      gap: 4px;
+    }
+
+    .scrub-btn {
+      border: none;
+      background: transparent;
+      color: var(--ice-muted);
+      padding: 9px 15px;
+      border-radius: 9px;
+      font-size: 0.80rem;
+      cursor: pointer;
+      transition: all 0.25s var(--ease-out-expo);
+    }
+
+    .scrub-btn:hover {
+      color: var(--ice-bright);
+      background: rgba(220, 236, 252, 0.08);
+    }
+
+    .scrub-btn.active {
+      color: var(--ice-bright);
+      background: rgba(220, 236, 252, 0.14);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+
+    /* Memory Pill Switch */
+    .memory-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 20px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      border: 1px solid var(--ice-border-hover);
+      background: var(--glass-surface-strong);
+      color: var(--ice-bright);
+      transition: all 0.28s var(--ease-out-expo);
+    }
+
+    .memory-pill.armed {
+      border-color: var(--marigold-border);
+      background: linear-gradient(135deg, rgba(255, 42, 54, 0.18), rgba(24, 27, 34, 0.90));
+      box-shadow: 0 0 24px rgba(255, 42, 54, 0.16);
+    }
+
+    .memory-pill.bypassed {
+      border-color: var(--ice-border);
+      color: var(--ice-muted);
+      opacity: 0.82;
+    }
+
+    .memory-indicator {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--marigold);
+      box-shadow: 0 0 10px var(--marigold);
+      transition: all 0.25s ease;
+    }
+
+    .memory-pill.bypassed .memory-indicator {
+      background: var(--ice-dim);
+      box-shadow: none;
+    }
+
+    /* Scrollable Main Stage */
+    .stage-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 34px 42px 52px;
+      scroll-behavior: smooth;
+    }
+
+    .stage-scroll::-webkit-scrollbar {
+      width: 7px;
+    }
+
+    .stage-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .stage-scroll::-webkit-scrollbar-thumb {
+      background: rgba(220, 236, 252, 0.18);
+      border-radius: 999px;
+    }
+
+    /* Glass Cards with Interactive Moonlight Silver Spotlight Sheen */
+    .glass-card {
+      position: relative;
+      background: var(--glass-surface);
+      backdrop-filter: blur(24px) saturate(135%);
+      -webkit-backdrop-filter: blur(24px) saturate(135%);
+      border: 1px solid var(--ice-border);
+      border-radius: 18px;
+      padding: 28px 30px;
+      box-shadow:
+        0 18px 42px -16px rgba(0, 0, 0, 0.64),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      transition:
+        transform 0.35s var(--ease-out-expo),
+        border-color 0.35s var(--ease-out-expo),
+        box-shadow 0.35s var(--ease-out-expo);
+      overflow: hidden;
+    }
+
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 0%),
+          rgba(226, 232, 240, 0.065),
+          transparent 48%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+    }
+
+    .glass-card:hover::before {
+      opacity: 1;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(213, 220, 230, 0.22);
+    }
+
+    .glass-card.signal-tint {
+      background: linear-gradient(155deg, rgba(255, 42, 54, 0.10) 0%, rgba(22, 25, 31, 0.76) 56%);
+      border-color: var(--marigold-border);
+      box-shadow:
+        0 20px 46px -16px rgba(0, 0, 0, 0.70),
+        0 0 34px -12px rgba(255, 42, 54, 0.24),
+        inset 0 1px 0 rgba(255, 120, 126, 0.15);
+    }
+
+    /* Motion Staggered Entrance */
+    .panel-view {
+      animation: panelReveal 0.48s var(--ease-out-expo) both;
+    }
+
+    .panel-hidden,
+    .hidden {
+      display: none !important;
+    }
+
+    @keyframes panelReveal {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 14px, 0) scale(0.994);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+    }
+
+    .stagger-item {
+      opacity: 0;
+      animation: itemRise 0.52s var(--ease-out-expo) forwards;
+    }
+
+    @keyframes itemRise {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 12px, 0);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+      }
+    }
+
+    /* Layout Grids Utilizing Full Width */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 22px;
+      margin-bottom: 28px;
+    }
+
+    .split-overview {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 26px;
+      align-items: start;
+    }
+
+    .split-equal {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 26px;
+      align-items: start;
+    }
+
+    @media (max-width: 1360px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .split-overview,
+      .split-equal {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* KPI Card Typography */
+    .kpi-kicker {
+      font-size: 0.78rem;
+      color: var(--ice-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .kpi-kicker .mono-ref {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .kpi-value {
+      font-family: var(--font-heading);
+      font-size: 3.05rem;
+      font-weight: 600;
+      color: var(--ice-bright);
+      letter-spacing: -0.035em;
+      margin: 12px 0 10px;
+      line-height: 1.05;
+    }
+
+    .kpi-value.signal {
+      color: var(--marigold-soft);
+      text-shadow: 0 0 28px rgba(255, 42, 54, 0.32);
+    }
+
+    .kpi-footnote {
+      font-size: 0.94rem;
+      color: var(--ice-muted);
+    }
+
+    /* Badges (Charcoal + Moonlight Silver + Signal Red) */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      border: 1px solid var(--ice-border);
+      background: rgba(213, 220, 230, 0.07);
+      color: var(--ice-main);
+      white-space: nowrap;
+    }
+
+    .badge.failed,
+    .badge.repeat,
+    .badge.interrupt,
+    .badge.sev1 {
+      background: var(--marigold-tint-strong);
+      border-color: var(--marigold-border);
+      color: #ff8e94;
+    }
+
+    .badge.worked,
+    .badge.new,
+    .badge.silent {
+      background: rgba(226, 232, 240, 0.12);
+      border-color: rgba(226, 232, 240, 0.32);
+      color: var(--ice-bright);
+    }
+
+    .badge.partial,
+    .badge.related,
+    .badge.soft_warning,
+    .badge.sev2 {
+      background: rgba(255, 42, 54, 0.07);
+      border-color: rgba(213, 220, 230, 0.24);
+      color: var(--ice-main);
+    }
+
+    /* Interactive Incident Cards & Attempt Rows */
+    .clean-item {
+      padding: 22px 24px;
+      border-radius: 15px;
+      background: rgba(16, 18, 23, 0.58);
+      border: 1px solid var(--ice-border);
+      margin-bottom: 14px;
+      transition: all 0.28s var(--ease-out-expo);
+    }
+
+    .clean-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .clean-item:hover {
+      border-color: var(--ice-border-hover);
+      transform: translateX(3px);
+      background: rgba(24, 28, 35, 0.72);
+    }
+
+    .clean-item.dead-end {
+      border-left: 3px solid var(--marigold);
+      background: linear-gradient(90deg, rgba(255, 42, 54, 0.09) 0%, rgba(16, 18, 23, 0.58) 50%);
+    }
+
+    .clean-item.selected-incident {
+      border-color: var(--ice-border-hover);
+      box-shadow: inset 3px 0 0 var(--ice-bright);
+      background: rgba(28, 32, 40, 0.78);
+    }
+
+    /* Architectural Timeline Spine */
+    .timeline-track {
+      position: relative;
+      padding-left: 36px;
+      margin-top: 22px;
+    }
+
+    .timeline-track::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 10px;
+      bottom: 10px;
+      width: 1px;
+      background: linear-gradient(180deg, var(--marigold-border), var(--ice-border) 68%, transparent);
+    }
+
+    .timeline-node {
+      position: relative;
+      margin-bottom: 22px;
+    }
+
+    .timeline-node::before {
+      content: "";
+      position: absolute;
+      left: -33px;
+      top: 28px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--ice-bright);
+      border: 2px solid var(--charcoal-base);
+      box-shadow: 0 0 0 3px rgba(213, 220, 230, 0.15);
+    }
+
+    .timeline-node.failed::before {
+      background: var(--marigold);
+      box-shadow: 0 0 14px var(--marigold), 0 0 0 4px rgba(255, 42, 54, 0.22);
+    }
+
+    /* Citation / Narrative Pull-Quote Box */
+    .quote-callout {
+      margin-top: 16px;
+      padding: 18px 22px;
+      border-left: 2px solid rgba(213, 220, 230, 0.30);
+      background: rgba(12, 14, 18, 0.50);
+      border-radius: 0 12px 12px 0;
+    }
+
+    .quote-callout.marigold-accent {
+      border-left-color: var(--marigold);
+      background: rgba(255, 42, 54, 0.06);
+    }
+
+    /* Buttons & Inputs */
+    .btn {
+      padding: 13px 22px;
+      border-radius: 12px;
+      border: 1px solid var(--ice-border);
+      background: rgba(28, 32, 40, 0.78);
+      color: var(--ice-bright);
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: all 0.25s var(--ease-out-expo);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--ice-border-hover);
+      background: rgba(40, 46, 56, 0.90);
+      transform: translateY(-1px);
+    }
+
+    .btn-signal {
+      background: linear-gradient(135deg, #ff2a36 0%, #d91b26 100%);
+      border-color: rgba(255, 110, 118, 0.50);
+      color: #ffffff;
+      font-weight: 500;
+      box-shadow: 0 8px 24px -6px rgba(255, 42, 54, 0.50);
+    }
+
+    .btn-signal:hover {
+      background: linear-gradient(135deg, #ff424d 0%, #e6222d 100%);
+      border-color: #ff8a90;
+      color: #ffffff;
+      box-shadow: 0 12px 28px -6px rgba(255, 42, 54, 0.68);
+    }
+
+    .preset-chip {
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 0.80rem;
+      background: rgba(20, 23, 29, 0.78);
+      border: 1px solid var(--ice-border);
+      color: var(--ice-muted);
+      cursor: pointer;
+      transition: all 0.22s var(--ease-out-expo);
+    }
+
+    .preset-chip:hover,
+    .preset-chip.active-preset {
+      color: var(--ice-bright);
+      border-color: var(--marigold-border);
+      background: var(--marigold-tint);
+    }
+
+    .glass-input {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--ice-border);
+      background: rgba(12, 14, 18, 0.76);
+      color: var(--ice-bright);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .glass-input::placeholder {
+      color: var(--ice-dim);
+    }
+
+    .glass-input:focus {
+      border-color: var(--ice-border-hover);
+      box-shadow: 0 0 0 3px rgba(213, 220, 230, 0.08);
+    }
+
+    .simulator-bar {
+      display: grid;
+      grid-template-columns: 0.9fr 1.8fr 1fr auto;
+      gap: 14px;
+      margin: 22px 0 28px;
+    }
+
+    @media (max-width: 1200px) {
+      .simulator-bar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Minimal Data Table */
+    .minimal-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+    }
+
+    .minimal-table th {
+      text-align: left;
+      font-size: 0.80rem;
+      color: var(--ice-dim);
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--ice-border);
+    }
+
+    .minimal-table td {
+      padding: 18px 16px;
+      border-bottom: 1px solid rgba(220, 236, 252, 0.07);
+      vertical-align: top;
+      font-size: 0.98rem;
+    }
+
+    .minimal-table tr {
+      transition: background 0.2s ease;
+    }
+
+    .minimal-table tbody tr:hover {
+      background: rgba(220, 236, 252, 0.04);
+    }
+
+    /* Floating Glass Toast */
+    .glass-toast {
+      position: fixed;
+      bottom: 30px;
+      right: 36px;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 24px;
+      border-radius: 14px;
+      background: rgba(20, 23, 29, 0.92);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--marigold-border);
+      color: var(--ice-bright);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(255, 42, 54, 0.18);
+      transform: translate3d(0, 24px, 0);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.50s var(--ease-out-expo);
+    }
+
+    .glass-toast.visible {
+      transform: translate3d(0, 0, 0);
+      opacity: 1;
+    }
+
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Outside-to-Inside Shrinking Blur Circle Reveal Veil -->
+  <div id="introBlurVeil" class="intro-blur-veil" aria-hidden="true"></div>
+  <div id="introIrisRing" class="intro-iris-ring" aria-hidden="true"></div>
+
+  <!-- Atmospheric Charcoal Black Stage + Interactive Ripple Canvas -->
+  <div class="ambient-stage">
+    <div class="ambient-orb marigold"></div>
+    <div class="ambient-orb charcoal-silver"></div>
+    <div class="ambient-orb ice"></div>
+    <canvas id="rippleCanvas"></canvas>
+    <div class="ambient-grid"></div>
+  </div>
+
+  <!-- Full-Viewport Desktop Layout -->
+  <div class="app-shell">
+    <!-- LEFT GLASS NAVIGATION RAIL -->
+    <aside class="sidebar">
+      <div>
+        <div class="brand-block">
+          <div class="brand-mark"></div>
+          <div>
+            <div class="brand-title">Meredian</div>
+            <div class="brand-sub">Institutional Memory</div>
+          </div>
+        </div>
+
+        <div class="sidebar-section-label ui-accent">Active Incident Bank</div>
+        <div class="glass-select-wrap">
+          <select id="incidentSelect" class="glass-select" onchange="onIncidentChange()">
+            <option value="payments-memleak">payments-memleak · SEV-1</option>
+            <option value="auth-token-storm">auth-token-storm · SEV-2</option>
+            <option value="redis-failover-stall">redis-failover-stall · SEV-2</option>
+          </select>
+        </div>
+
+        <div class="sidebar-section-label ui-accent">Workspace Views</div>
+        <nav class="nav-list">
+          <button class="nav-btn active" data-tab="overview" onclick="switchTab('overview')">
+            <span class="nav-idx">01</span>
+            <span>Command Overview</span>
+          </button>
+          <button class="nav-btn" data-tab="timeline" onclick="switchTab('timeline')">
+            <span class="nav-idx">02</span>
+            <span>Attempt Timeline</span>
+          </button>
+          <button class="nav-btn" data-tab="briefing" onclick="switchTab('briefing')">
+            <span class="nav-idx">03</span>
+            <span>State of the Problem</span>
+          </button>
+          <button class="nav-btn" data-tab="interceptions" onclick="switchTab('interceptions')">
+            <span class="nav-idx">04</span>
+            <span>Interception Log</span>
+          </button>
+          <button class="nav-btn" data-tab="explorer" onclick="switchTab('explorer')">
+            <span class="nav-idx">05</span>
+            <span>Memory Explorer</span>
+          </button>
+          <button class="nav-btn" data-tab="compare" onclick="switchTab('compare')">
+            <span class="nav-idx">06</span>
+            <span>Action Simulator</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="shift-footer">
+        <div class="ui-accent" style="font-size:0.78rem; color:var(--ice-dim); margin-bottom:10px;">
+          Follow-the-Sun Relay
+        </div>
+        <div class="shift-row">
+          <span class="ui-accent"><span class="dot-idle"></span>Seattle · A</span>
+          <span class="mono-ref">Handed Off</span>
+        </div>
+        <div class="shift-row">
+          <span class="ui-accent"><span class="dot-idle"></span>London · C</span>
+          <span class="mono-ref">Handed Off</span>
+        </div>
+        <div class="shift-row active-shift">
+          <span class="ui-accent"><span class="dot-live"></span>Bengaluru · B</span>
+          <span class="mono-ref" style="color:var(--marigold-soft);">On Call</span>
+        </div>
+        <div
+          style="margin-top:12px; padding-top:12px; border-top:1px solid var(--ice-border); display:flex; justify-content:space-between; align-items:center;">
+          <span class="ui-accent" style="font-size:0.78rem; color:var(--ice-muted);">UTC</span>
+          <span id="liveUtcClock" class="mono-ref">--:--:-- UTC</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN FULL-SCREEN WORKSPACE -->
+    <main class="workspace">
+      <!-- Top Glass Bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 id="viewHeadline">Command Overview</h1>
+          <p id="viewSubline">Real-time institutional memory across Seattle, London, and Bengaluru engineering shifts.
+          </p>
+        </div>
+
+        <div class="topbar-controls">
+          <div class="scrubber" role="group" aria-label="Temporal Replay Scrubber">
+            <button class="scrub-btn" data-day="0" onclick="triggerReplay(0)">Day 00 · Empty</button>
+            <button class="scrub-btn" data-day="1" onclick="triggerReplay(1)">Day 01 · Seattle</button>
+            <button class="scrub-btn active" data-day="2" onclick="triggerReplay(2)">Day 02 · Multi-Shift</button>
+            <button class="scrub-btn" data-day="5" onclick="triggerReplay(5)">Day 05 · Root Cause</button>
+          </div>
+
+          <button id="memoryToggleBtn" class="memory-pill armed" onclick="toggleMemory()">
+            <span class="memory-indicator"></span>
+            <span id="memoryToggleLabel">Memory · Armed</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Dynamic Views Container -->
+      <div class="stage-scroll" id="stageScroll">
+        <!-- 01: OVERVIEW -->
+        <section id="tab-overview" class="panel-view">
+          <div class="kpi-grid" id="overviewMetrics"></div>
+
+          <div class="split-overview">
+            <div class="glass-card">
+              <div class="section-header-row">
+                <h2>Active Incident Banks</h2>
+                <span class="kicker" style="font-size:0.78rem; color:var(--ice-dim);">Select Bank</span>
+              </div>
+              <div id="incidentsList"></div>
+
+              <div id="overviewBeliefHighlight" style="margin-top:24px;"></div>
+            </div>
+
+            <div class="glass-card">
+              <div class="section-header-row">
+                <h2>Band Coordination Stream</h2>
+                <span class="badge" id="bandModeBadge">Live Room Sync</span>
+              </div>
+              <div id="bandMessagesList" style="max-height: 540px; overflow-y: auto; padding-right: 6px;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 02: TIMELINE -->
+        <section id="tab-timeline" class="panel-view hidden">
+          <div class="glass-card">
+            <div class="section-header-row">
+              <div>
+                <h2>Cross-Shift Attempt Timeline</h2>
+                <p style="margin-top:6px;">Every hypothesis, code change, and empirical outcome retained in
+                  Hindsight—dead ends accented in Signal Red.</p>
+              </div>
+              <span class="badge" id="timelineSummaryBadge">0 Attempts</span>
+            </div>
+            <div class="timeline-track" id="timelineContainer"></div>
+          </div>
+        </section>
+
+        <!-- 03: BRIEFING -->
+        <section id="tab-briefing" class="panel-view hidden">
+          <div id="briefingContainer"></div>
+        </section>
+
+        <!-- 04: INTERCEPTION LOG -->
+        <section id="tab-interceptions" class="panel-view hidden">
+          <div class="glass-card">
+            <div class="section-header-row">
+              <div>
+                <h2>Interception &amp; Audit Ledger</h2>
+                <p style="margin-top:6px;">Complete record of every proposed action evaluated by Meredian, including
+                  silent passes and engineer overrides.</p>
+              </div>
+              <div id="interceptionsSummaryPills" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
+            </div>
+            <div id="interceptionsContainer"></div>
+          </div>
+        </section>
+
+        <!-- 05: MEMORY EXPLORER -->
+        <section id="tab-explorer" class="panel-view hidden">
+          <div class="glass-card" style="margin-bottom:26px;">
+            <div class="section-header-row">
+              <div>
+                <h2>Hindsight Bank Explorer</h2>
+                <p style="margin-top:6px;">Query atomic facts, inspect bank directives, and trace how team beliefs
+                  consolidated from Day 1 to Day 5.</p>
+              </div>
+              <span class="badge" id="explorerStatusBadge">Hindsight · Ready</span>
+            </div>
+            <div style="display:flex; gap:14px; margin-top:18px;">
+              <input id="explorerSearchInput" class="glass-input"
+                placeholder="Search institutional memory (e.g. Redis timeout, SessionContext, JWKS, Sentinel)..."
+                onkeydown="if(event.key==='Enter') loadExplorer()" />
+              <button class="btn btn-signal" onclick="loadExplorer()">Recall Memory</button>
+            </div>
+          </div>
+          <div id="explorerContainer"></div>
+        </section>
+
+        <!-- 06: SIMULATOR -->
+        <section id="tab-compare" class="panel-view hidden">
+          <div class="glass-card" style="margin-bottom:26px;">
+            <div class="section-header-row">
+              <div>
+                <h2>Shift B Interception Simulator</h2>
+                <p style="margin-top:6px;">Evaluate a proposed file edit or command side-by-side: Baseline (Memory
+                  Bypassed) vs. Hindsight Recall &amp; Judge.</p>
+              </div>
+              <span class="kicker" style="font-size:0.80rem; color:var(--marigold-soft);">Bengaluru Shift · Live
+                Check</span>
+            </div>
+
+            <div id="presetChipsRow" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:18px;"></div>
+
+            <div class="simulator-bar">
+              <input id="simFile" class="glass-input" value="config/redis.yml" placeholder="Target file (optional)" />
+              <input id="simAction" class="glass-input" value="REDIS_TIMEOUT: 200ms -> 1000ms in config/redis.yml"
+                placeholder="Proposed diff or terminal command" />
+              <input id="simCond" class="glass-input" value="" placeholder="Runtime conditions (optional)" />
+              <button class="btn btn-signal" onclick="runComparisonCheck()">Evaluate Action</button>
+            </div>
+
+            <div id="compareResultContainer"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Minimal Floating Toast -->
+  <div id="statusToast" class="glass-toast">
+    <span class="dot-live" style="margin:0;"></span>
+    <span id="statusToastText" class="ui-accent" style="font-size:0.84rem;">Ready</span>
+  </div>
+
+  <script>
+    const API = window.location.port === "5173" ? "http://127.0.0.1:8000" : "";
+    let currentIncident = "payments-memleak";
+    let activeTabName = "overview";
+
+    /* =====================================================================
+       1. INTERACTIVE BACKGROUND RIPPLE ENGINE
+          Ripple-only triad: Ice Silver, Velvet Aubergine, and Marigold
+          - Opening ripples: larger (~195-280px)
+          - Mouse ripples: compact (~52-84px), normal responsive motion,
+            and previous ripples fade away quickly as new ones form.
+       ===================================================================== */
+    const rippleEngine = (() => {
+      const canvas = document.getElementById("rippleCanvas");
+      const ctx = canvas.getContext("2d");
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+      let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      const ripples = [];
+      const MAX_RIPPLES = 7;
+
+      // Triad ripple color themes (Velvet Aubergine, Marigold & Ice Silver strictly in ripples)
+      const PALETTES = [
+        {
+          crest: "226, 238, 252",   // Ice Silver crest
+          harmonic: "255, 178, 44", // Marigold harmonic
+          wash: "84, 30, 114"       // Deep Velvet Aubergine wash
+        },
+        {
+          crest: "255, 181, 46",    // Marigold crest
+          harmonic: "224, 238, 252",// Ice Silver harmonic
+          wash: "76, 26, 104"       // Deep Velvet Aubergine wash
+        },
+        {
+          crest: "126, 56, 164",    // Velvet Aubergine crest
+          harmonic: "230, 241, 254",// Ice Silver harmonic
+          wash: "255, 173, 31"      // Soft Marigold inner wash
+        }
+      ];
+
+      let paletteIdx = 0;
+      let pointerX = width * 0.55;
+      let pointerY = height * 0.45;
+      let smoothX = pointerX;
+      let smoothY = pointerY;
+      let lastSpawnX = -999;
+      let lastSpawnY = -999;
+      let lastSpawnTime = 0;
+      let lastMoveTime = performance.now();
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function spawnRipple(x, y, strength = 1.0, isInitial = false) {
+        // When a new mouse ripple forms, accelerate older mouse ripples so previous ones disappear fast
+        if (!isInitial) {
+          for (let i = 0; i < ripples.length; i++) {
+            if (!ripples[i].isInitial) {
+              ripples[i].age += ripples[i].duration * 0.28;
+            }
+          }
+        }
+
+        if (ripples.length >= MAX_RIPPLES) {
+          ripples.shift();
+        }
+        const theme = PALETTES[paletteIdx % PALETTES.length];
+        paletteIdx += 1;
+
+        // Initial opening ripples are large (~195-280px); mouse ripples are compact (~52-84px) & disappear quickly
+        const baseRadius = isInitial
+          ? (195 + Math.random() * 85) * strength
+          : (52 + Math.random() * 32) * strength;
+
+        const rippleDuration = isInitial
+          ? 1550 + Math.random() * 350
+          : 640 + Math.random() * 180;
+
+        ripples.push({
+          x,
+          y,
+          age: 0,
+          duration: rippleDuration,
+          maxRadius: baseRadius,
+          strength,
+          isInitial,
+          theme
+        });
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+
+      // Spawn larger opening ripples right at initial page load
+      spawnRipple(width * 0.30, height * 0.36, 1.15, true);
+      spawnRipple(width * 0.72, height * 0.62, 1.10, true);
+
+      window.addEventListener("pointermove", (e) => {
+        const now = performance.now();
+        const dx = e.clientX - lastSpawnX;
+        const dy = e.clientY - lastSpawnY;
+        const dist = Math.hypot(dx, dy);
+
+        pointerX = e.clientX;
+        pointerY = e.clientY;
+        lastMoveTime = now;
+
+        // Responsive formation as mouse moves; previous ripples quickly fade out
+        if (dist >= 28 && now - lastSpawnTime >= 44) {
+          const velocityBoost = Math.min(1.15, Math.max(0.85, dist / 95));
+          spawnRipple(e.clientX, e.clientY, velocityBoost, false);
+          lastSpawnX = e.clientX;
+          lastSpawnY = e.clientY;
+          lastSpawnTime = now;
+        }
+      }, { passive: true });
+
+      window.addEventListener("pointerdown", (e) => {
+        spawnRipple(e.clientX, e.clientY, 1.25, false);
+      }, { passive: true });
+
+      let prevFrame = performance.now();
+      function render(now) {
+        const dt = Math.min(48, now - prevFrame);
+        prevFrame = now;
+
+        // Subtle small idle ripple if untouched for a while
+        if (now - lastMoveTime > 4200 && now - lastSpawnTime > 3800) {
+          const rx = width * (0.22 + Math.random() * 0.65);
+          const ry = height * (0.18 + Math.random() * 0.64);
+          spawnRipple(rx, ry, 0.95, false);
+          lastSpawnTime = now;
+        }
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Responsive, compact cursor wake (Velvet Aubergine + Marigold + Ice Silver)
+        smoothX += (pointerX - smoothX) * 0.10;
+        smoothY += (pointerY - smoothY) * 0.10;
+
+        const cursorAura = ctx.createRadialGradient(
+          smoothX, smoothY, 0,
+          smoothX, smoothY, 155
+        );
+        cursorAura.addColorStop(0, "rgba(255, 178, 44, 0.042)");
+        cursorAura.addColorStop(0.38, "rgba(84, 30, 114, 0.072)");
+        cursorAura.addColorStop(0.72, "rgba(226, 238, 252, 0.022)");
+        cursorAura.addColorStop(1, "rgba(10, 11, 14, 0)");
+        ctx.fillStyle = cursorAura;
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw crisp expanding ripples with fast clean fade-out
+        for (let i = ripples.length - 1; i >= 0; i--) {
+          const rp = ripples[i];
+          rp.age += dt;
+          const t = rp.age / rp.duration;
+          if (t >= 1) {
+            ripples.splice(i, 1);
+            continue;
+          }
+
+          // Responsive expansion motion + brisk disappearance
+          const ease = 1 - Math.pow(1 - t, 3.2);
+          const fade = Math.pow(1 - t, rp.isInitial ? 1.75 : 2.35);
+          const radius = Math.max(3, rp.maxRadius * ease);
+
+          // Soft annular refraction wash behind wavefront
+          const innerWashR = Math.max(0, radius * 0.64);
+          const grad = ctx.createRadialGradient(
+            rp.x, rp.y, innerWashR,
+            rp.x, rp.y, radius
+          );
+          grad.addColorStop(0, `rgba(${rp.theme.wash}, 0)`);
+          grad.addColorStop(0.68, `rgba(${rp.theme.wash}, ${(0.12 * fade * rp.strength).toFixed(4)})`);
+          grad.addColorStop(0.92, `rgba(${rp.theme.crest}, ${(0.085 * fade).toFixed(4)})`);
+          grad.addColorStop(1, `rgba(${rp.theme.crest}, 0)`);
+
+          ctx.beginPath();
+          ctx.arc(rp.x, rp.y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          // Primary outer crest ring
+          ctx.beginPath();
+          ctx.arc(rp.x, rp.y, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${rp.theme.crest}, ${(0.34 * fade).toFixed(4)})`;
+          ctx.lineWidth = Math.max(0.45, 2.0 * (1 - t * 0.72));
+          ctx.stroke();
+
+          // Secondary inner harmonic ring
+          if (t > 0.06) {
+            const r2 = radius * 0.70;
+            ctx.beginPath();
+            ctx.arc(rp.x, rp.y, r2, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(${rp.theme.harmonic}, ${(0.24 * fade).toFixed(4)})`;
+            ctx.lineWidth = Math.max(0.35, 1.3 * (1 - t * 0.65));
+            ctx.stroke();
+          }
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+      return { spawnRipple };
+    })();
+
+    /* =====================================================================
+       2. OUTSIDE-TO-INSIDE SHRINKING BLUR CIRCLE INTRO REVEAL
+          Starts fully blurred; circle contracts from screen corners -> 0px
+          at center, clearing the site from outside to inside.
+       ===================================================================== */
+    let introPlayed = false;
+    function playIntroBlurReveal() {
+      if (introPlayed) return;
+      introPlayed = true;
+
+      const veil = document.getElementById("introBlurVeil");
+      const ring = document.getElementById("introIrisRing");
+      if (!veil || !ring) return;
+
+      const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReduced) {
+        veil.remove();
+        ring.remove();
+        return;
+      }
+
+      const halfDiag = Math.hypot(window.innerWidth * 0.5, window.innerHeight * 0.5);
+      const startRadius = halfDiag + 72;
+      const feather = 64;
+      const duration = 1480;
+      const startTime = performance.now();
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const p = Math.min(1, elapsed / duration);
+
+        // Smooth S-curve with gentle deceleration into the center point
+        const eased = p < 0.5
+          ? 4 * p * p * p
+          : 1 - Math.pow(-2 * p + 2, 3) / 2;
+
+        const currentR = Math.max(0, startRadius * (1 - eased));
+        const innerR = Math.max(0, currentR - feather);
+
+        veil.style.setProperty("--veil-r", `${currentR.toFixed(1)}px`);
+        veil.style.setProperty("--veil-inner", `${innerR.toFixed(1)}px`);
+
+        ring.style.setProperty("--ring-d", `${(currentR * 2).toFixed(1)}px`);
+        ring.style.opacity = String(Math.min(1, (1 - p) * 1.35));
+
+        if (p < 1) {
+          requestAnimationFrame(step);
+        } else {
+          // Emit a larger opening center ripple as the intro blur circle finishes shrinking
+          rippleEngine.spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.5, 1.25, true);
+          veil.remove();
+          ring.remove();
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    /* =====================================================================
+       3. MEREDIAN DASHBOARD LOGIC & DATA BINDINGS
+       ===================================================================== */
+    const VIEW_META = {
+      overview: {
+        title: "Command Overview",
+        sub: "Real-time institutional memory across Seattle, London, and Bengaluru engineering shifts."
+      },
+      timeline: {
+        title: "Attempt Timeline",
+        sub: "Chronological shift handovers, empirical outcomes, and documented dead ends."
+      },
+      briefing: {
+        title: "State of the Problem",
+        sub: "Synthesized shift-start briefing generated via Hindsight reflect()."
+      },
+      interceptions: {
+        title: "Interception Log",
+        sub: "Audit trail of repeat blocks, condition-aware warnings, silences, and linked overrides."
+      },
+      explorer: {
+        title: "Memory Explorer",
+        sub: "Inside the Hindsight bank: mission directives, consolidated observations, and belief history."
+      },
+      compare: {
+        title: "Action Simulator",
+        sub: "Before-and-after proof: test what happens when Shift B repeats a dead end."
+      }
+    };
+
+    const INCIDENT_PRESETS = {
+      "payments-memleak": [
+        {
+          label: "01 · Repeat Redis Timeout (Interrupt)",
+          file: "config/redis.yml",
+          action: "REDIS_TIMEOUT: 200ms -> 1000ms in config/redis.yml",
+          cond: ""
+        },
+        {
+          label: "02 · Repeat Pool Size (Interrupt)",
+          file: "config/redis.yml",
+          action: "REDIS_MAX_CONNECTIONS: 50 -> 300 in config/redis.yml",
+          cond: ""
+        },
+        {
+          label: "03 · New Redis 7.4 Cluster (Soft Warning)",
+          file: "config/redis.yml",
+          action: "Set REDIS_TIMEOUT: 500ms",
+          cond: "redis-7.4-cluster-envoy-multiplexing"
+        },
+        {
+          label: "04 · Auth TTLCache Fix (New / Silent)",
+          file: "services/auth/auth_middleware.py",
+          action: "Replace _SESSION_CACHE with TTLCache(maxsize=50000, ttl=300)",
+          cond: ""
+        }
+      ],
+      "auth-token-storm": [
+        {
+          label: "01 · Repeat Tight JWKS Timeout (Interrupt)",
+          file: "services/auth/jwks_client.py",
+          action: "Lower JWKS_FETCH_TIMEOUT to 200ms in services/auth/jwks_client.py",
+          cond: ""
+        },
+        {
+          label: "02 · With Singleflight Coalescing (Soft Warning)",
+          file: "services/auth/jwks_client.py",
+          action: "Adjust JWKS_FETCH_TIMEOUT to 400ms in services/auth/jwks_client.py",
+          cond: "singleflight-coalescing-enabled"
+        },
+        {
+          label: "03 · Stale-While-Revalidate Cache (New / Silent)",
+          file: "services/auth/auth_middleware.py",
+          action: "Add stale-while-revalidate JWKS key cache in auth_middleware.py",
+          cond: ""
+        }
+      ],
+      "redis-failover-stall": [
+        {
+          label: "01 · Repeat Socket Timeout Bump (Interrupt)",
+          file: "config/redis.yml",
+          action: "Raise REDIS_TIMEOUT to 2000ms in config/redis.yml",
+          cond: ""
+        },
+        {
+          label: "02 · With disconnect_on_readonly (Soft Warning)",
+          file: "config/redis.yml",
+          action: "Set REDIS_TIMEOUT: 500ms during Sentinel promotion",
+          cond: "sentinel-disconnect_on_readonly=True"
+        },
+        {
+          label: "03 · Metrics Instrumentation (New / Silent)",
+          file: "services/payments/metrics.py",
+          action: "Export readonly_reconnect_total counter in metrics.py",
+          cond: ""
+        }
+      ]
+    };
+
+    // Live UTC Clock
+    function updateClock() {
+      const now = new Date();
+      const hh = String(now.getUTCHours()).padStart(2, "0");
+      const mm = String(now.getUTCMinutes()).padStart(2, "0");
+      const ss = String(now.getUTCSeconds()).padStart(2, "0");
+      const el = document.getElementById("liveUtcClock");
+      if (el) el.textContent = `${hh}:${mm}:${ss} UTC`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Interactive Glass Card Spotlight Sheen
+    document.addEventListener("mousemove", (e) => {
+      document.querySelectorAll(".glass-card").forEach((card) => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+        card.style.setProperty("--my", `${e.clientY - rect.top}px`);
+      });
+    }, { passive: true });
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById("statusToast");
+      document.getElementById("statusToastText").textContent = msg;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 3800);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function formatBandText(raw) {
+      const noEmoji = String(raw ?? "")
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]+/gu, "")
+        .replace(/^[ \t]+/gm, (spaces) => (spaces.length <= 2 ? "" : spaces))
+        .trim();
+
+      return escapeHtml(noEmoji)
+        .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight:600; font-style:normal; color:var(--ice-bright);">$1</strong>')
+        .replace(/`([^`]+)`/g, '<span class="mono-ref" style="font-style:normal; color:var(--marigold-soft);">$1</span>')
+        .replace(/\*([^*\n]+)\*/g, '$1');
+    }
+
+    function switchTab(tab) {
+      activeTabName = tab;
+      document.querySelectorAll(".nav-btn").forEach((b) => {
+        b.classList.toggle("active", b.dataset.tab === tab);
+      });
+      ["overview", "timeline", "briefing", "interceptions", "explorer", "compare"].forEach((t) => {
+        const sec = document.getElementById(`tab-${t}`);
+        if (t === tab) {
+          sec.classList.remove("hidden");
+          sec.style.animation = "none";
+          void sec.offsetWidth;
+          sec.style.animation = "";
+        } else {
+          sec.classList.add("hidden");
+        }
+      });
+      const meta = VIEW_META[tab] || VIEW_META.overview;
+      document.getElementById("viewHeadline").textContent = meta.title;
+      document.getElementById("viewSubline").textContent = meta.sub;
+      document.getElementById("stageScroll").scrollTop = 0;
+    }
+
+    function renderPresets() {
+      const presets = INCIDENT_PRESETS[currentIncident] || INCIDENT_PRESETS["payments-memleak"];
+      const row = document.getElementById("presetChipsRow");
+      row.innerHTML = presets
+        .map(
+          (p, i) => `
+          <button class="preset-chip ${i === 0 ? "active-preset" : ""}" onclick="selectPreset(${i})">
+            ${escapeHtml(p.label)}
+          </button>
+        `
+        )
+        .join("");
+      if (presets.length > 0) {
+        selectPreset(0, false);
+      }
+    }
+
+    function selectPreset(index, highlight = true) {
+      const presets = INCIDENT_PRESETS[currentIncident] || INCIDENT_PRESETS["payments-memleak"];
+      const p = presets[index];
+      if (!p) return;
+      document.getElementById("simFile").value = p.file;
+      document.getElementById("simAction").value = p.action;
+      document.getElementById("simCond").value = p.cond;
+      if (highlight) {
+        document.querySelectorAll(".preset-chip").forEach((chip, i) => {
+          chip.classList.toggle("active-preset", i === index);
+        });
+      }
+    }
+
+    function selectIncidentFromCard(incId) {
+      document.getElementById("incidentSelect").value = incId;
+      onIncidentChange();
+    }
+
+    async function onIncidentChange() {
+      currentIncident = document.getElementById("incidentSelect").value;
+      renderPresets();
+      document.getElementById("compareResultContainer").innerHTML = "";
+      await refreshAll();
+      showToast(`Switched active bank to ${currentIncident}`);
+    }
+
+    async function triggerReplay(day) {
+      document.querySelectorAll(".scrub-btn").forEach((b) => {
+        b.classList.toggle("active", Number(b.dataset.day) === day);
+      });
+      showToast(`Replaying ${currentIncident} · Day 0${day}...`);
+      await fetch(`${API}/replay/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ incident_id: currentIncident, up_to_day: day, reset_first: true })
+      });
+      await refreshAll();
+      showToast(
+        day === 0
+          ? "Day 00 Baseline — Empty Hindsight Bank"
+          : `Synchronized ${currentIncident} through Day 0${day}`
+      );
+    }
+
+    async function toggleMemory() {
+      const ov = await fetch(`${API}/overview?incident_id=${currentIncident}`).then((r) => r.json());
+      const next = !ov.memory_enabled;
+      await fetch(`${API}/memory/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memory_enabled: next })
+      });
+      await refreshAll();
+      showToast(next ? "Meredian Memory Armed" : "Meredian Memory Bypassed");
+    }
+
+    async function loadExplorer() {
+      const q = document.getElementById("explorerSearchInput").value;
+      const ex = await fetch(
+        `${API}/explorer/${currentIncident}?q=${encodeURIComponent(q)}`
+      ).then((r) => r.json());
+      renderExplorer(ex);
+    }
+
+    async function runComparisonCheck() {
+      const file_path = document.getElementById("simFile").value;
+      const diff_or_command = document.getElementById("simAction").value;
+      const conditions = document.getElementById("simCond").value || null;
+      const payload = {
+        incident_id: currentIncident,
+        actor: "Aarav",
+        site: "Bengaluru",
+        source: "web",
+        file_path: file_path || null,
+        diff_or_command,
+        conditions
+      };
+
+      const liveVerdict = await fetch(`${API}/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then((r) => r.json());
+
+      const cmp = await fetch(`${API}/check/compare`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then((r) => r.json());
+
+      cmp.with_memory.interception_id = liveVerdict.interception_id;
+      renderCompareResult(cmp, diff_or_command, file_path);
+      await refreshAll(false);
+    }
+
+    async function submitOverride(interceptionId, priorAttemptId, actionText, filePath) {
+      const reasonInput = document.getElementById("overrideReasonInput");
+      const reason = reasonInput ? reasonInput.value.trim() : "";
+      if (!reason) {
+        showToast("Enter the new runtime condition before overriding");
+        if (reasonInput) reasonInput.focus();
+        return;
+      }
+      const res = await fetch(`${API}/override`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          incident_id: currentIncident,
+          interception_id: interceptionId,
+          prior_attempt_id: priorAttemptId,
+          actor: "Aarav",
+          site: "Bengaluru",
+          proposed_action: actionText,
+          reason,
+          new_conditions: reason,
+          files_components: filePath ? [filePath] : ["config/redis.yml"]
+        })
+      }).then((r) => r.json());
+      showToast(`Retained linked retry ${res.retained_attempt.id}`);
+      await refreshAll();
+    }
+
+    function animateCounter(el, targetValue, isDecimal = false, suffix = "") {
+      if (!el) return;
+      const start = 0;
+      const duration = 520;
+      const startTime = performance.now();
+      function tick(now) {
+        const p = Math.min(1, (now - startTime) / duration);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const current = start + (targetValue - start) * eased;
+        el.textContent = (isDecimal ? current.toFixed(1) : Math.round(current)) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function renderCompareResult(cmp, actionText, filePath) {
+      const wm = cmp.with_memory;
+      const wom = cmp.without_memory;
+      const isInterrupt = wm.policy_action === "interrupt";
+      const safeAction = escapeHtml(actionText).replace(/'/g, "");
+      const safeFile = escapeHtml(filePath || "").replace(/'/g, "");
+
+      document.getElementById("compareResultContainer").innerHTML = `
+        <div class="split-equal">
+          <div class="glass-card stagger-item" style="animation-delay:0.04s;">
+            <div class="section-header-row">
+              <span class="kicker" style="font-size:0.82rem; color:var(--ice-dim);">Baseline · Without Memory</span>
+              <span class="badge silent">Silent Pass</span>
+            </div>
+            <h3 style="margin-bottom:12px;">Uninformed Shift Execution</h3>
+            <p>${escapeHtml(wom.what_was_tried)}</p>
+            <div class="quote-callout" style="margin-top:20px;">
+              <blockquote style="color:var(--ice-main);">
+                “Without institutional memory, Shift B re-applies the identical configuration, runs another 20-minute soak test, and burns ~2.5 engineering hours.”
+              </blockquote>
+            </div>
+          </div>
+
+          <div class="glass-card ${isInterrupt ? "signal-tint" : ""} stagger-item" style="animation-delay:0.12s;">
+            <div class="section-header-row">
+              <span class="kicker" style="font-size:0.82rem; color:${isInterrupt ? "var(--marigold-soft)" : "var(--ice-main)"};">
+                Hindsight Recall + Judge
+              </span>
+              <div style="display:flex; gap:8px;">
+                <span class="badge ${wm.policy_action}">${escapeHtml(wm.policy_action)}</span>
+                <span class="badge ${wm.verdict}">${escapeHtml(wm.verdict)} · ${Math.round(wm.confidence * 100)}%</span>
+              </div>
+            </div>
+
+            <h3 style="margin-bottom:12px;">
+              ${isInterrupt ? "Dead-End Repeat Intercepted" : wm.policy_action === "soft_warning" ? "Conditional Nuance Flagged" : "Clear to Proceed — Novel Hypothesis"}
+            </h3>
+
+            <p style="color:var(--ice-bright); margin-bottom:12px;">${escapeHtml(wm.what_was_tried)}</p>
+
+            ${wm.who ? `
+              <div class="quote-callout ${isInterrupt ? "marigold-accent" : ""}">
+                <blockquote>
+                  “Tested by ${escapeHtml(wm.who)} in ${escapeHtml(wm.site)} at ${escapeHtml(wm.when)} — ${escapeHtml((wm.evidence || []).join(", ") || "cited telemetry")}.”
+                </blockquote>
+              </div>
+            ` : ""}
+
+            ${wm.differences && wm.verdict !== "repeat" ? `
+              <p style="margin-top:14px;"><strong style="color:var(--ice-bright);">Condition Delta:</strong> ${escapeHtml(wm.differences)}</p>
+            ` : ""}
+
+            <p style="margin-top:14px;">
+              <span class="ui-accent" style="font-size:0.80rem; color:var(--ice-dim); display:block; margin-bottom:4px;">Recommended Trajectory</span>
+              <span style="color:var(--ice-bright);">${escapeHtml(wm.suggested_next)}</span>
+            </p>
+
+            ${wm.policy_action !== "silent" ? `
+              <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--ice-border);">
+                <div class="ui-accent" style="font-size:0.78rem; color:var(--ice-muted); margin-bottom:10px;">
+                  Override &amp; Retain Conditional Retry (retry_of: ${escapeHtml(wm.matched_attempt_id || "prior")})
+                </div>
+                <div style="display:flex; gap:12px;">
+                  <input id="overrideReasonInput" class="glass-input" placeholder="State what changed (e.g. Redis 7.4 cluster + Envoy multiplexing)..." />
+                  <button class="btn" onclick="submitOverride('${wm.interception_id || ""}', '${wm.matched_attempt_id || ""}', '${safeAction}', '${safeFile}')">
+                    Record Override
+                  </button>
+                </div>
+              </div>
+            ` : ""}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderExplorer(ex) {
+      const cfg = ex.config || {};
+      const statusBadge = document.getElementById("explorerStatusBadge");
+      if (statusBadge) statusBadge.textContent = `Bank · ${ex.memory_status || "Ready"}`;
+
+      const obsHtml = (ex.observations || [])
+        .map(
+          (o, idx) => `
+          <div class="clean-item stagger-item" style="animation-delay:${idx * 0.06}s;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px;">
+              <h3>${escapeHtml(o.topic)}</h3>
+              <span class="badge">${o.evidence_count} Evidence · ${Math.round(o.confidence * 100)}%</span>
+            </div>
+            <blockquote style="margin:10px 0 12px;">
+              “${escapeHtml(o.belief)}”
+            </blockquote>
+            <div class="mono-ref" style="color:var(--ice-dim);">
+              Citations: ${escapeHtml((o.evidence_refs || []).join(" · "))}
+            </div>
+            ${o.history && o.history.length
+              ? `
+              <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--ice-border);">
+                <div class="ui-accent" style="font-size:0.78rem; color:var(--ice-dim); margin-bottom:8px;">
+                  Temporal Belief Consolidation
+                </div>
+                ${o.history
+                .map(
+                  (h) => `
+                  <div style="font-size:0.95rem; color:var(--ice-muted); margin-bottom:6px;">
+                    <span class="mono-ref" style="color:var(--marigold-soft);">Day 0${h.day}</span> — ${escapeHtml(h.belief)}
+                  </div>
+                `
+                )
+                .join("")}
+              </div>
+            `
+              : ""
+            }
+          </div>
+        `
+        )
+        .join("") || `<p>No consolidated observations formed yet for this bank state.</p>`;
+
+      const factsHtml = (ex.facts || [])
+        .map(
+          (f, idx) => `
+          <div class="clean-item ${f.outcome === "failed" ? "dead-end" : ""} stagger-item" style="animation-delay:${idx * 0.05}s;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span class="mono-ref">Day 0${f.day} · ${escapeHtml(f.who)} · ${escapeHtml(f.site)}</span>
+              <span class="badge ${f.outcome}">${escapeHtml(f.outcome)}</span>
+            </div>
+            <p style="color:var(--ice-main);">${escapeHtml(f.text)}</p>
+            <div class="mono-ref" style="color:var(--ice-dim); margin-top:10px;">
+              ${escapeHtml((f.evidence_refs || []).join(" · "))} ${f.retry_of ? `· RETRY_OF ${escapeHtml(f.retry_of)}` : ""}
+            </div>
+          </div>
+        `
+        )
+        .join("") || `<p>No atomic facts match this query.</p>`;
+
+      document.getElementById("explorerContainer").innerHTML = `
+        <div class="glass-card" style="margin-bottom:26px;">
+          <div class="ui-accent" style="font-size:0.80rem; color:var(--ice-dim); margin-bottom:8px;">
+            Bank Charter &amp; Skeptical Disposition (${escapeHtml(ex.bank_id)})
+          </div>
+          <blockquote style="font-size:1.25rem; color:var(--ice-bright);">
+            “${escapeHtml(cfg.mission || "I am the institutional memory of a global engineering team. I prioritize what was tried, what failed and why, and what is still unknown.")}”
+          </blockquote>
+          <p style="margin-top:12px;">
+            <span class="mono-ref" style="color:var(--marigold-soft);">Disposition:</span> ${escapeHtml(cfg.disposition || "Moderately skeptical")}
+          </p>
+        </div>
+
+        <div class="split-equal">
+          <div class="glass-card">
+            <div class="section-header-row">
+              <h3>Consolidated Observations</h3>
+              <span class="mono-ref">${(ex.observations || []).length} Active</span>
+            </div>
+            ${obsHtml}
+          </div>
+          <div class="glass-card">
+            <div class="section-header-row">
+              <h3>Extracted Atomic Facts</h3>
+              <span class="mono-ref">${(ex.facts || []).length} Stored</span>
+            </div>
+            ${factsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    async function refreshAll(animateKpis = true) {
+      const [ov, tl, br, intr, ex, bd] = await Promise.all([
+        fetch(`${API}/overview?incident_id=${currentIncident}`).then((r) => r.json()),
+        fetch(`${API}/timeline/${currentIncident}`).then((r) => r.json()),
+        fetch(`${API}/briefing/${currentIncident}`).then((r) => r.json()),
+        fetch(`${API}/interceptions?incident_id=${currentIncident}`).then((r) => r.json()),
+        fetch(`${API}/explorer/${currentIncident}`).then((r) => r.json()),
+        fetch(`${API}/band/messages?incident_id=${currentIncident}`).then((r) => r.json())
+      ]);
+
+      // Sync top controls
+      const memPill = document.getElementById("memoryToggleBtn");
+      const memLabel = document.getElementById("memoryToggleLabel");
+      memPill.className = `memory-pill ${ov.memory_enabled ? "armed" : "bypassed"}`;
+      memLabel.textContent = ov.memory_enabled
+        ? `Memory · Armed (Day 0${ov.current_day})`
+        : `Memory · Bypassed`;
+
+      document.querySelectorAll(".scrub-btn").forEach((b) => {
+        b.classList.toggle("active", Number(b.dataset.day) === Number(ov.current_day));
+      });
+
+      // 01: Overview KPIs
+      const m = ov.metrics;
+      document.getElementById("overviewMetrics").innerHTML = `
+        <div class="glass-card stagger-item" style="animation-delay:0.02s;">
+          <div class="kpi-kicker ui-accent">
+            <span>Active Banks</span>
+            <span class="mono-ref">Day 0${ov.current_day}</span>
+          </div>
+          <div class="kpi-value" id="kpiIncidents">${m.active_incidents_count}</div>
+          <div class="kpi-footnote">Isolated Hindsight memory per incident</div>
+        </div>
+
+        <div class="glass-card signal-tint stagger-item" style="animation-delay:0.07s;">
+          <div class="kpi-kicker ui-accent">
+            <span style="color:var(--marigold-soft);">Dead Ends Avoided</span>
+            <span class="mono-ref" style="color:var(--marigold-soft);">Intercepted</span>
+          </div>
+          <div class="kpi-value signal" id="kpiDeadEnds">${m.dead_ends_avoided}</div>
+          <div class="kpi-footnote">${m.dead_ends_documented} ruled-out paths · ${m.interceptions_triggered} live blocks</div>
+        </div>
+
+        <div class="glass-card stagger-item" style="animation-delay:0.12s;">
+          <div class="kpi-kicker ui-accent">
+            <span>Hours Reclaimed</span>
+            <span class="mono-ref" style="color:var(--marigold-soft);">Shift Room</span>
+          </div>
+          <div class="kpi-value" id="kpiHours">${m.estimated_hours_saved}h</div>
+          <div class="kpi-footnote">${escapeHtml(m.hours_saved_assumption)}</div>
+        </div>
+
+        <div class="glass-card stagger-item" style="animation-delay:0.17s;">
+          <div class="kpi-kicker ui-accent">
+            <span>Secrets Redacted</span>
+            <span class="mono-ref">Sanitized</span>
+          </div>
+          <div class="kpi-value" id="kpiSecrets">${m.secrets_redacted}</div>
+          <div class="kpi-footnote">Keys, DSNs, tokens &amp; hosts stripped pre-retain</div>
+        </div>
+      `;
+
+      if (animateKpis) {
+        animateCounter(document.getElementById("kpiIncidents"), m.active_incidents_count);
+        animateCounter(document.getElementById("kpiDeadEnds"), m.dead_ends_avoided);
+        animateCounter(document.getElementById("kpiHours"), m.estimated_hours_saved, true, "h");
+        animateCounter(document.getElementById("kpiSecrets"), m.secrets_redacted);
+      }
+
+      // Incidents Matrix
+      document.getElementById("incidentsList").innerHTML = (ov.incidents || [])
+        .map(
+          (inc) => `
+          <div class="clean-item ${inc.id === currentIncident ? "selected-incident" : ""}" style="cursor:pointer;" onclick="selectIncidentFromCard('${inc.id}')">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:14px;">
+              <h3 style="font-weight:500;">${escapeHtml(inc.title)}</h3>
+              <span class="badge ${inc.severity === "SEV-1" ? "sev1" : "sev2"}">${escapeHtml(inc.severity)}</span>
+            </div>
+            <div class="mono-ref" style="color:var(--ice-dim); margin-top:8px;">
+              ${escapeHtml(inc.id)} · Service: ${escapeHtml(inc.service)} · ${escapeHtml(inc.status)}
+            </div>
+          </div>
+        `
+        )
+        .join("");
+
+      const topObs = (br.observations || [])[0];
+      document.getElementById("overviewBeliefHighlight").innerHTML = topObs
+        ? `
+          <div class="quote-callout marigold-accent">
+            <div class="ui-accent" style="font-size:0.78rem; color:var(--marigold-soft); margin-bottom:8px;">
+              Consolidated Hindsight Belief · ${topObs.evidence_count} Shift Attempts
+            </div>
+            <blockquote>“${escapeHtml(topObs.belief)}”</blockquote>
+          </div>
+        `
+        : "";
+
+      // Band Feed
+      document.getElementById("bandModeBadge").textContent = `Band · ${(bd.mode || "mock").toUpperCase()}`;
+      document.getElementById("bandMessagesList").innerHTML =
+        (bd.messages || [])
+          .slice()
+          .reverse()
+          .map(
+            (msg) => `
+            <div class="clean-item ${msg.kind === "interrupt" ? "dead-end" : ""}">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span class="ui-accent" style="font-size:0.82rem; color:${msg.kind === "interrupt" ? "var(--marigold-soft)" : "var(--ice-bright)"};">
+                  ${escapeHtml(msg.sender)} · ${escapeHtml(msg.site)}
+                </span>
+                <span class="mono-ref" style="color:var(--ice-dim);">${escapeHtml((msg.timestamp_utc || "").slice(11, 19))} UTC</span>
+              </div>
+              <blockquote style="color:var(--ice-main); white-space:pre-wrap;">“${formatBandText(msg.text)}”</blockquote>
+            </div>
+          `
+          )
+          .join("") || `<p>No messages posted to this incident room yet.</p>`;
+
+      // 02: Attempt Timeline
+      document.getElementById("timelineSummaryBadge").textContent =
+        `${tl.total_attempts || 0} Attempts · ${tl.dead_ends_count || 0} Dead Ends`;
+
+      document.getElementById("timelineContainer").innerHTML =
+        (tl.attempts || [])
+          .map(
+            (a, idx) => `
+            <div class="timeline-node ${a.outcome} stagger-item" style="animation-delay:${idx * 0.06}s;">
+              <div class="clean-item ${a.outcome === "failed" ? "dead-end" : ""}">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+                  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <span class="badge ${a.outcome}">${escapeHtml(a.outcome)}</span>
+                    <span class="ui-accent" style="font-size:0.84rem; color:var(--ice-bright);">
+                      Day 0${a.day} · ${escapeHtml(a.shift)} · ${escapeHtml(a.who)}
+                    </span>
+                    ${a.retry_of ? `<span class="badge">Retry of ${escapeHtml(a.retry_of)}</span>` : ""}
+                  </div>
+                  <span class="mono-ref" style="color:var(--ice-dim);">${escapeHtml(a.timestamp_utc)}</span>
+                </div>
+
+                <h3 style="margin-bottom:8px;">${escapeHtml(a.action)}</h3>
+                <p><strong style="color:var(--ice-main);">Hypothesis:</strong> ${escapeHtml(a.hypothesis)}</p>
+                <p style="margin-top:6px;"><strong style="color:var(--ice-main);">Empirical Result:</strong> ${escapeHtml(a.reason)}</p>
+                <p style="margin-top:6px;"><strong style="color:var(--ice-main);">Handover Suspect:</strong> ${escapeHtml(a.next_suspect)}</p>
+
+                <div class="quote-callout ${a.outcome === "failed" ? "marigold-accent" : ""}">
+                  <blockquote style="color:var(--ice-main);">
+                    “${escapeHtml(a.narrative)}”
+                  </blockquote>
+                  <div class="mono-ref" style="color:var(--ice-dim); margin-top:10px;">
+                    Evidence: ${escapeHtml((a.evidence_refs || []).join(" · "))} · Components: ${escapeHtml((a.files_components || []).join(", "))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
+          )
+          .join("") || `<p>Bank is currently at Day 00 Baseline (empty). Select Day 02 or Day 05 in the top scrubber to replay shift attempts.</p>`;
+
+      // 03: State of the Problem Briefing
+      document.getElementById("briefingContainer").innerHTML = `
+        <div class="glass-card" style="margin-bottom:26px;">
+          <div class="section-header-row">
+            <span class="ui-accent" style="font-size:0.82rem; color:var(--marigold-soft);">
+              Shift-Start Synthesis · Day 0${br.day}
+            </span>
+            <span class="badge">Hindsight reflect() · ${escapeHtml(br.memory_status)}</span>
+          </div>
+          <h2 style="font-size:1.52rem; margin-bottom:12px;">${escapeHtml(br.headline)}</h2>
+          <blockquote style="font-size:1.18rem; color:var(--ice-main);">
+            “${escapeHtml(br.mental_model || br.leading_suspect_rationale)}”
+          </blockquote>
+        </div>
+
+        <div class="split-overview">
+          <div class="glass-card">
+            <div class="section-header-row">
+              <h3>Ruled-Out Dead Ends</h3>
+              <span class="badge failed">${(br.ruled_out || []).length} Blocked Paths</span>
+            </div>
+            ${(br.ruled_out || [])
+          .map(
+            (r) => `
+                  <div class="clean-item dead-end">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                      <span class="mono-ref">${escapeHtml(r.who)} · ${escapeHtml(r.site)}</span>
+                      <span class="mono-ref" style="color:var(--ice-dim);">${escapeHtml(r.when)}</span>
+                    </div>
+                    <h4 style="margin-bottom:6px;">${escapeHtml(r.hypothesis_or_action)}</h4>
+                    <p>${escapeHtml(r.reason)}</p>
+                    <div class="mono-ref" style="color:var(--marigold-soft); margin-top:10px;">
+                      Cited: ${escapeHtml((r.evidence_refs || []).join(" · "))}
+                    </div>
+                  </div>
+                `
+          )
+          .join("") || `<p>No dead ends ruled out yet.</p>`
+        }
+
+            ${br.conflicts && br.conflicts.length
+          ? `
+                <div style="margin-top:26px;">
+                  <div class="section-header-row">
+                    <h3>Cross-Site Condition Conflicts</h3>
+                    <span class="badge">Load Delta</span>
+                  </div>
+                  ${br.conflicts
+            .map(
+              (c) => `
+                      <div class="clean-item">
+                        <h4 style="margin-bottom:8px;">${escapeHtml(c.topic)}</h4>
+                        <p>${escapeHtml(c.summary)}</p>
+                        <div class="mono-ref" style="color:var(--ice-dim); margin-top:10px;">
+                          Conditions: ${escapeHtml(c.conditions_diff)}
+                        </div>
+                      </div>
+                    `
+            )
+            .join("")}
+                </div>
+              `
+          : ""
+        }
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:26px;">
+            <div class="glass-card signal-tint">
+              <div class="ui-accent" style="font-size:0.80rem; color:var(--marigold-soft); margin-bottom:8px;">
+                Primary Suspect &amp; Immediate Directive
+              </div>
+              <h3 style="font-size:1.30rem; margin-bottom:10px;">${escapeHtml(br.leading_suspect)}</h3>
+              <blockquote style="color:var(--ice-main); margin-bottom:18px;">
+                “${escapeHtml(br.leading_suspect_rationale)}”
+              </blockquote>
+              <div style="padding-top:16px; border-top:1px solid var(--ice-border);">
+                <div class="ui-accent" style="font-size:0.78rem; color:var(--ice-dim); margin-bottom:6px;">
+                  Recommended First Step for Incoming Shift
+                </div>
+                <p style="color:var(--ice-bright);">${escapeHtml(br.recommended_first_step)}</p>
+              </div>
+            </div>
+
+            <div class="glass-card">
+              <div class="section-header-row">
+                <h3>Open Engineering Questions</h3>
+              </div>
+              ${(br.open_questions || [])
+          .map(
+            (q) => `
+                  <div class="clean-item">
+                    <blockquote>“${escapeHtml(q)}”</blockquote>
+                  </div>
+                `
+          )
+          .join("")}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 04: Interceptions Ledger
+      document.getElementById("interceptionsSummaryPills").innerHTML = `
+        <span class="badge">${intr.total} Checks</span>
+        <span class="badge interrupt">${intr.interrupts} Interrupts</span>
+        <span class="badge soft_warning">${intr.soft_warnings} Warnings</span>
+        <span class="badge silent">${intr.silences} Silent</span>
+        <span class="badge">${intr.overrides} Overrides</span>
+      `;
+
+      document.getElementById("interceptionsContainer").innerHTML = `
+        <table class="minimal-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Engineer / Surface</th>
+              <th>Proposed Action</th>
+              <th>Verdict</th>
+              <th>Evidence &amp; Context</th>
+              <th>Override</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(intr.items || [])
+          .map(
+            (item) => `
+                  <tr>
+                    <td class="mono-ref" style="color:var(--ice-dim);">${escapeHtml(item.timestamp_utc)}</td>
+                    <td>
+                      <div style="color:var(--ice-bright); font-weight:500;">${escapeHtml(item.actor)}</div>
+                      <div class="mono-ref" style="color:var(--ice-dim);">${escapeHtml(item.site)} · ${escapeHtml(item.source)}</div>
+                    </td>
+                    <td>
+                      ${item.file_path ? `<div class="mono-ref" style="color:var(--marigold-soft); margin-bottom:4px;">${escapeHtml(item.file_path)}</div>` : ""}
+                      <div style="color:var(--ice-main);">${escapeHtml(item.raw_action)}</div>
+                    </td>
+                    <td>
+                      <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
+                        <span class="badge ${item.verdict.policy_action}">${escapeHtml(item.verdict.policy_action)}</span>
+                        <span class="mono-ref" style="color:var(--ice-dim);">${escapeHtml(item.verdict.verdict)} · ${Math.round(item.verdict.confidence * 100)}%</span>
+                      </div>
+                    </td>
+                    <td>
+                      <p style="color:var(--ice-main);">${escapeHtml(item.verdict.what_was_tried)}</p>
+                      ${(item.verdict.evidence || []).length
+                ? `<div class="mono-ref" style="color:var(--ice-dim); margin-top:6px;">${escapeHtml(item.verdict.evidence.join(" · "))}</div>`
+                : ""
+              }
+                    </td>
+                    <td>
+                      ${item.overridden
+                ? `<span class="badge">${escapeHtml(item.override_attempt_id || "Linked")}</span>
+                             <blockquote style="font-size:0.98rem; margin-top:6px; color:var(--ice-muted);">“${escapeHtml(item.override_reason)}”</blockquote>`
+                : `<span class="mono-ref" style="color:var(--ice-dim);">—</span>`
+              }
+                    </td>
+                  </tr>
+                `
+          )
+          .join("") ||
+        `<tr><td colspan="6"><p style="padding:18px 0;">No checks recorded yet for this bank. Run an action in 06 · Action Simulator to populate the ledger.</p></td></tr>`
+        }
+          </tbody>
+        </table>
+      `;
+
+      // 05: Explorer
+      renderExplorer(ex);
+    }
+
+    // Boot sequence: populate data behind the frosted veil, then shrink the blur circle from outside -> inside
+    renderPresets();
+    const fallbackRevealTimer = setTimeout(playIntroBlurReveal, 360);
+    refreshAll()
+      .catch(() => { })
+      .finally(() => {
+        clearTimeout(fallbackRevealTimer);
+        requestAnimationFrame(() => playIntroBlurReveal());
+      });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+# Environment & Secrets
+.env
+.env.local
+*.env
+agent_config.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Database & Local State
+*.db
+*.sqlite
+*.sqlite3
+.hindsight/
+.llm_cache/
+
+# Node / Web / VS Code Extension
+node_modules/
+web/dist/
+interceptor/vscode-extension/out/
+interceptor/vscode-extension/*.vsix
+

@@ -1,0 +1,64 @@
+{
+  "name": "meredian-vscode-interceptor",
+  "displayName": "Meredian — Follow-the-Sun Memory Interceptor",
+  "description": "Stops the current shift from repeating dead ends already tested by earlier shifts.",
+  "version": "0.1.0",
+  "publisher": "meredian",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "meredian.checkCurrentFile",
+        "title": "Meredian: Check Current File Against Shift Memory"
+      },
+      {
+        "command": "meredian.showBriefing",
+        "title": "Meredian: Show Shift-Start Briefing (State of the Problem)"
+      }
+    ],
+    "configuration": {
+      "title": "Meredian",
+      "properties": {
+        "meredian.apiUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8000",
+          "description": "Meredian FastAPI base URL"
+        },
+        "meredian.incidentId": {
+          "type": "string",
+          "default": "payments-memleak",
+          "description": "Active incident bank ID in Hindsight"
+        },
+        "meredian.actor": {
+          "type": "string",
+          "default": "Aarav",
+          "description": "Current engineer name"
+        },
+        "meredian.site": {
+          "type": "string",
+          "default": "Bengaluru",
+          "description": "Current engineering site"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}
+

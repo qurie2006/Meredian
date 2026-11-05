@@ -1,0 +1,153 @@
+[
+  {
+    "id": "eval-01",
+    "incident_id": "payments-memleak",
+    "description": "Exact repeat: raising REDIS_TIMEOUT in config/redis.yml",
+    "file_path": "config/redis.yml",
+    "diff_or_command": "REDIS_TIMEOUT: 200ms -> 1000ms in config/redis.yml",
+    "conditions": null,
+    "expected_verdict": "repeat",
+    "expected_policy": "interrupt"
+  },
+  {
+    "id": "eval-02",
+    "incident_id": "payments-memleak",
+    "description": "Terminal repeat: redis-cli CONFIG SET timeout",
+    "file_path": null,
+    "diff_or_command": "redis-cli CONFIG SET timeout 900",
+    "conditions": null,
+    "expected_verdict": "repeat",
+    "expected_policy": "interrupt"
+  },
+  {
+    "id": "eval-03",
+    "incident_id": "payments-memleak",
+    "description": "Exact repeat: increasing REDIS_MAX_CONNECTIONS in config/redis.yml",
+    "file_path": "config/redis.yml",
+    "diff_or_command": "Bump REDIS_MAX_CONNECTIONS from 50 to 300 in config/redis.yml",
+    "conditions": null,
+    "expected_verdict": "repeat",
+    "expected_policy": "interrupt"
+  },
+  {
+    "id": "eval-04",
+    "incident_id": "payments-memleak",
+    "description": "Exact repeat: tuning Redis keepalive in config/redis.yml",
+    "file_path": "config/redis.yml",
+    "diff_or_command": "Set REDIS_KEEPALIVE: 180s and REDIS_TIMEOUT: 600ms in config/redis.yml",
+    "conditions": null,
+    "expected_verdict": "repeat",
+    "expected_policy": "interrupt"
+  },
+  {
+    "id": "eval-05",
+    "incident_id": "payments-memleak",
+    "description": "Repeat: lowering GC_SWEEP_INTERVAL_SEC in worker.py under high prod load",
+    "file_path": "services/payments/worker.py",
+    "diff_or_command": "Set GC_SWEEP_INTERVAL_SEC = 15 in services/payments/worker.py",
+    "conditions": "prod-replay-1800rps",
+    "expected_verdict": "repeat",
+    "expected_policy": "interrupt"
+  },
+  {
+    "id": "eval-06",
+    "incident_id": "payments-memleak",
+    "description": "Related: Redis timeout change under brand-new Redis 7.4 cluster + Envoy multiplexing",
+    "file_path": "config/redis.yml",
+    "diff_or_command": "Adjust REDIS_TIMEOUT to 500ms in config/redis.yml",
+    "conditions": "redis-7.4-cluster-envoy-multiplexing-enabled",
+    "expected_verdict": "related",
+    "expected_policy": "soft_warning"
+  },
+  {
+    "id": "eval-07",
+    "incident_id": "payments-memleak",
+    "description": "Related: Redis pool sizing after enabling horizontal pod autoscaler and new cgroup limits",
+    "file_path": "config/redis.yml",
+    "diff_or_command": "Update REDIS_MAX_CONNECTIONS to 120 in config/redis.yml",
+    "conditions": "hpa-v2-autoscaled-16-replicas-new-cgroup",
+    "expected_verdict": "related",
+    "expected_policy": "soft_warning"
+  },
+  {
+    "id": "eval-08",
+    "incident_id": "payments-memleak",
+    "description": "Related: GC interval tweak specifically for low-throughput batch reconciliation worker",
+    "file_path": "services/payments/worker.py",
+    "diff_or_command": "Change GC_SWEEP_INTERVAL_SEC = 45 in services/payments/worker.py",
+    "conditions": "batch-reconciliation-worker-50rps-isolated",
+    "expected_verdict": "related",
+    "expected_policy": "soft_warning"
+  },
+  {
+    "id": "eval-09",
+    "incident_id": "payments-memleak",
+    "description": "Related: Redis timeout tweak during Sentinel failover with disconnect_on_readonly enabled",
+    "file_path": "config/redis.yml",
+    "diff_or_command": "Set REDIS_TIMEOUT: 500ms with disconnect_on_readonly",
+    "conditions": "sentinel-failover-disconnect_on_readonly=True",
+    "expected_verdict": "related",
+    "expected_policy": "soft_warning"
+  },
+  {
+    "id": "eval-10",
+    "incident_id": "payments-memleak",
+    "description": "New action: bounding _SESSION_CACHE with TTLCache in auth_middleware.py (the recommended next step!)",
+    "file_path": "services/auth/auth_middleware.py",
+    "diff_or_command": "Replace unbounded _SESSION_CACHE dict with TTLCache(maxsize=50000, ttl=300) in services/auth/auth_middleware.py",
+    "conditions": null,
+    "expected_verdict": "new",
+    "expected_policy": "silent"
+  },
+  {
+    "id": "eval-11",
+    "incident_id": "payments-memleak",
+    "description": "New action: adding Prometheus heap gauge per endpoint in metrics.py",
+    "file_path": "services/payments/metrics.py",
+    "diff_or_command": "Add Histogram and Gauge for tracemalloc top object counts in services/payments/metrics.py",
+    "conditions": null,
+    "expected_verdict": "new",
+    "expected_policy": "silent"
+  },
+  {
+    "id": "eval-12",
+    "incident_id": "payments-memleak",
+    "description": "New action: Postgres statement timeout in db/postgres.yml",
+    "file_path": "config/postgres.yml",
+    "diff_or_command": "Set statement_timeout = 5000 in config/postgres.yml",
+    "conditions": null,
+    "expected_verdict": "new",
+    "expected_policy": "silent"
+  },
+  {
+    "id": "eval-13",
+    "incident_id": "payments-memleak",
+    "description": "New action: Stripe webhook signature verification logging in webhooks.py",
+    "file_path": "services/payments/webhooks.py",
+    "diff_or_command": "Add structured request_id logging to verify_stripe_signature in services/payments/webhooks.py",
+    "conditions": null,
+    "expected_verdict": "new",
+    "expected_policy": "silent"
+  },
+  {
+    "id": "eval-14",
+    "incident_id": "payments-memleak",
+    "description": "New action: Kafka consumer max_poll_records adjustment",
+    "file_path": "services/payments/kafka_consumer.py",
+    "diff_or_command": "Set max_poll_records=100 in services/payments/kafka_consumer.py",
+    "conditions": null,
+    "expected_verdict": "new",
+    "expected_policy": "silent"
+  },
+  {
+    "id": "eval-15",
+    "incident_id": "payments-memleak",
+    "description": "New action: Evicting expired SessionContext entries on auth retry abort",
+    "file_path": "services/auth/auth_middleware.py",
+    "diff_or_command": "Call _SESSION_CACHE.pop(session_id, None) inside AuthRetryAbortHandler in services/auth/auth_middleware.py",
+    "conditions": null,
+    "expected_verdict": "new",
+    "expected_policy": "silent"
+  }
+]
+

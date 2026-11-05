@@ -1,0 +1,325 @@
+{
+  "company": {
+    "name": "Northwind Pay",
+    "sites": [
+      {"name": "Seattle", "shift": "Shift A", "timezone": "America/Los_Angeles", "engineers": ["Maya", "Devon"]},
+      {"name": "Bengaluru", "shift": "Shift B", "timezone": "Asia/Kolkata", "engineers": ["Aarav", "Priya"]},
+      {"name": "London", "shift": "Shift C", "timezone": "Europe/London", "engineers": ["Liam", "Elena"]}
+    ],
+    "services": ["payments", "auth-middleware", "redis"]
+  },
+  "incidents": [
+    {
+      "id": "payments-memleak",
+      "title": "Payments Service OOM / 2.1GB Memory Leak Under Peak Checkout",
+      "service": "payments",
+      "severity": "SEV-1",
+      "status": "active",
+      "started_at_utc": "2026-11-01T01:30:00Z",
+      "estimated_hours_per_dead_end": 2.5,
+      "events": [
+        {
+          "id": "evt-pm-101",
+          "incident_id": "payments-memleak",
+          "day": 1,
+          "attempt_group_id": "att-pm-day1-redis-timeout",
+          "source": "git",
+          "actor": "Maya",
+          "site": "Seattle",
+          "timestamp_utc": "2026-11-01T03:05:00Z",
+          "type": "commit",
+          "payload": {
+            "commit": "4a9f2c1",
+            "shift": "Shift A (Seattle)",
+            "branch": "fix/redis-timeout-bump",
+            "files": ["config/redis.yml"],
+            "message": "Raise REDIS_TIMEOUT 200ms -> 800ms to prevent socket churn",
+            "diff": "--- a/config/redis.yml\n+++ b/config/redis.yml\n@@ -4,5 +4,5 @@\n host: redis-prod-01.internal.northwind.corp\n-REDIS_TIMEOUT: 200ms\n+REDIS_TIMEOUT: 800ms\n REDIS_MAX_CONNECTIONS: 50"
+          }
+        },
+        {
+          "id": "evt-pm-102",
+          "incident_id": "payments-memleak",
+          "day": 1,
+          "attempt_group_id": "att-pm-day1-redis-timeout",
+          "source": "terminal",
+          "actor": "Maya",
+          "site": "Seattle",
+          "timestamp_utc": "2026-11-01T03:12:00Z",
+          "type": "command_output",
+          "payload": {
+            "command": "payments-loadtest --rps 1500 --duration 20m --env staging",
+            "log_ref": "term-log-102",
+            "conditions": "staging-1500rps, redis=7.2",
+            "output": "Connecting with DSN redis://:nwProdRedisSecret99!@redis-prod-01.internal.northwind.corp:6379/0 (notify maya@northwindpay.io, token=gsk_live9876543210abcdefghijklmnop)...\n[03:12:00] Starting 1500 RPS checkout soak with REDIS_TIMEOUT=800ms\n[03:20:00] RSS=1.18GB | Redis active sockets=48\n[03:32:00] RSS=2.14GB (OOM warning threshold exceeded in 20 minutes)"
+          }
+        },
+        {
+          "id": "evt-pm-103",
+          "incident_id": "payments-memleak",
+          "day": 1,
+          "attempt_group_id": "att-pm-day1-redis-timeout",
+          "source": "band",
+          "actor": "Maya",
+          "site": "Seattle",
+          "timestamp_utc": "2026-11-01T03:14:00Z",
+          "type": "room_message",
+          "payload": {
+            "message_id": "band-msg-14",
+            "room": "Payments memory leak",
+            "shift": "Shift A (Seattle)",
+            "hypothesis": "Connection churn from short Redis timeouts causes the leak",
+            "action": "Raised REDIS_TIMEOUT 200ms -> 800ms",
+            "outcome": "failed",
+            "reason": "Memory still reached 2.1GB in 20 minutes",
+            "conclusion": "Redis timeout is not the cause",
+            "next_suspect": "Auth middleware",
+            "text": "Tried raising REDIS_TIMEOUT 200ms -> 800ms in config/redis.yml (commit 4a9f2c1). Memory still reached 2.1GB in 20 minutes under 1500 RPS load. Redis timeout is not the cause. Handing off to next shift — check Auth middleware."
+          }
+        },
+        {
+          "id": "evt-pm-201",
+          "incident_id": "payments-memleak",
+          "day": 2,
+          "attempt_group_id": "att-pm-day2-redis-pool",
+          "source": "git",
+          "actor": "Liam",
+          "site": "London",
+          "timestamp_utc": "2026-11-02T11:25:00Z",
+          "type": "commit",
+          "payload": {
+            "commit": "8c3d11e",
+            "shift": "Shift C (London)",
+            "branch": "fix/redis-pool-size",
+            "files": ["config/redis.yml"],
+            "message": "Increase REDIS_MAX_CONNECTIONS 50 -> 250 and TCP keepalive",
+            "diff": "--- a/config/redis.yml\n+++ b/config/redis.yml\n@@ -5,4 +5,5 @@\n REDIS_TIMEOUT: 200ms\n-REDIS_MAX_CONNECTIONS: 50\n+REDIS_MAX_CONNECTIONS: 250\n+REDIS_KEEPALIVE: 120s"
+          }
+        },
+        {
+          "id": "evt-pm-202",
+          "incident_id": "payments-memleak",
+          "day": 2,
+          "attempt_group_id": "att-pm-day2-redis-pool",
+          "source": "terminal",
+          "actor": "Liam",
+          "site": "London",
+          "timestamp_utc": "2026-11-02T11:38:00Z",
+          "type": "command_output",
+          "payload": {
+            "command": "py-spy dump --pid 4412 && redis-cli -h redis-eu-01.internal.northwind.corp INFO memory",
+            "log_ref": "term-log-209",
+            "conditions": "canary-1500rps, pool=250",
+            "output": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsaWFtQG5vcnRod2luZHBheS5pbyJ9.sig\nRedis used_memory_human: 142.10M (flat)\nPython worker RSS: 2.31GB after 18m. Top allocation: 1,420,000 SessionContext dicts in services/auth/auth_middleware.py"
+          }
+        },
+        {
+          "id": "evt-pm-203",
+          "incident_id": "payments-memleak",
+          "day": 2,
+          "attempt_group_id": "att-pm-day2-redis-pool",
+          "source": "band",
+          "actor": "Liam",
+          "site": "London",
+          "timestamp_utc": "2026-11-02T11:40:00Z",
+          "type": "room_message",
+          "payload": {
+            "message_id": "band-msg-29",
+            "room": "Payments memory leak",
+            "shift": "Shift C (London)",
+            "hypothesis": "Redis connection pool exhaustion causes response buffer retention in worker memory",
+            "action": "Increased REDIS_MAX_CONNECTIONS 50 -> 250 and REDIS_KEEPALIVE 120s in config/redis.yml",
+            "outcome": "failed",
+            "reason": "Python worker RSS still reached 2.31GB in 18 minutes while Redis server memory stayed flat at 142MB",
+            "conclusion": "Redis connection pool size and keepalive do not affect the leak",
+            "next_suspect": "Auth middleware _SESSION_CACHE",
+            "text": "Increased REDIS_MAX_CONNECTIONS 50 -> 250 in config/redis.yml (commit 8c3d11e). Worker RSS still hit 2.31GB in 18m. Redis is completely ruled out. Heap dump points to 1.42M SessionContext objects in services/auth/auth_middleware.py."
+          }
+        },
+        {
+          "id": "evt-pm-204",
+          "incident_id": "payments-memleak",
+          "day": 2,
+          "attempt_group_id": "att-pm-day2-gc-seattle",
+          "source": "git",
+          "actor": "Devon",
+          "site": "Seattle",
+          "timestamp_utc": "2026-11-02T19:10:00Z",
+          "type": "commit",
+          "payload": {
+            "commit": "c901b4f",
+            "shift": "Shift A (Seattle)",
+            "branch": "exp/aggressive-gc-sweep",
+            "files": ["services/payments/worker.py"],
+            "message": "Run forced gc.collect(2) every 30s in payment worker loop",
+            "diff": "--- a/services/payments/worker.py\n+++ b/services/payments/worker.py\n@@ -42,3 +42,4 @@\n-GC_SWEEP_INTERVAL_SEC = 300\n+GC_SWEEP_INTERVAL_SEC = 30"
+          }
+        },
+        {
+          "id": "evt-pm-205",
+          "incident_id": "payments-memleak",
+          "day": 2,
+          "attempt_group_id": "att-pm-day2-gc-seattle",
+          "source": "band",
+          "actor": "Devon",
+          "site": "Seattle",
+          "timestamp_utc": "2026-11-02T19:20:00Z",
+          "type": "room_message",
+          "payload": {
+            "message_id": "band-msg-34",
+            "room": "Payments memory leak",
+            "shift": "Shift A (Seattle)",
+            "conditions": "low-load-staging-200rps",
+            "hypothesis": "Cyclic references in payment worker coroutines delay generation-2 garbage collection",
+            "action": "Lowered GC_SWEEP_INTERVAL_SEC 300s -> 30s in services/payments/worker.py",
+            "outcome": "partial",
+            "reason": "Under light 200 RPS staging traffic, memory plateaued at 920MB",
+            "conclusion": "Aggressive GC sweep appeared to help at 200 RPS, needs high-load verification",
+            "next_suspect": "Verify GC sweep at 1500 RPS or inspect Auth middleware reference cycles",
+            "text": "Lowered GC_SWEEP_INTERVAL_SEC to 30s in services/payments/worker.py (commit c901b4f). At 200 RPS staging load, memory plateaued around 920MB."
+          }
+        },
+        {
+          "id": "evt-pm-206",
+          "incident_id": "payments-memleak",
+          "day": 2,
+          "attempt_group_id": "att-pm-day2-gc-london-conflict",
+          "source": "band",
+          "actor": "Elena",
+          "site": "London",
+          "timestamp_utc": "2026-11-02T22:05:00Z",
+          "type": "room_message",
+          "payload": {
+            "message_id": "band-msg-38",
+            "room": "Payments memory leak",
+            "shift": "Shift C (London)",
+            "commit": "d72e09a",
+            "files": ["services/payments/worker.py"],
+            "conditions": "prod-replay-1800rps",
+            "hypothesis": "Cyclic references in payment worker coroutines delay generation-2 garbage collection",
+            "action": "Tested GC_SWEEP_INTERVAL_SEC=30s in services/payments/worker.py under 1800 RPS production replay",
+            "outcome": "failed",
+            "reason": "At 1800 RPS, forced gc.collect() caused p99 latency spikes to 1.9s and RSS still reached 2.2GB because _SESSION_CACHE holds strong references",
+            "conclusion": "Aggressive GC fails under production load because leaked objects are strongly referenced in Auth middleware",
+            "next_suspect": "services/auth/auth_middleware.py _SESSION_CACHE eviction",
+            "text": "Re-tested Devon's GC_SWEEP_INTERVAL_SEC=30s (commit d72e09a) at 1800 RPS prod replay. It failed: p99 spiked to 1.9s and memory still hit 2.2GB because _SESSION_CACHE holds strong dict references that GC cannot collect."
+          }
+        },
+        {
+          "id": "evt-pm-501",
+          "incident_id": "payments-memleak",
+          "day": 5,
+          "attempt_group_id": "att-pm-day5-auth-cache-fix",
+          "source": "git",
+          "actor": "Priya",
+          "site": "Bengaluru",
+          "timestamp_utc": "2026-11-05T06:10:00Z",
+          "type": "commit",
+          "payload": {
+            "commit": "f31a88b",
+            "shift": "Shift B (Bengaluru)",
+            "branch": "fix/auth-session-ttl-cache",
+            "files": ["services/auth/auth_middleware.py"],
+            "message": "Replace unbounded _SESSION_CACHE dict with bounded TTLCache(maxsize=50000, ttl=300)",
+            "diff": "--- a/services/auth/auth_middleware.py\n+++ b/services/auth/auth_middleware.py\n@@ -18,3 +18,4 @@\n-_SESSION_CACHE: dict[str, SessionContext] = {}\n+_SESSION_CACHE = TTLCache(maxsize=50_000, ttl=300)"
+          }
+        },
+        {
+          "id": "evt-pm-502",
+          "incident_id": "payments-memleak",
+          "day": 5,
+          "attempt_group_id": "att-pm-day5-auth-cache-fix",
+          "source": "band",
+          "actor": "Priya",
+          "site": "Bengaluru",
+          "timestamp_utc": "2026-11-05T06:15:00Z",
+          "type": "room_message",
+          "payload": {
+            "message_id": "band-msg-61",
+            "room": "Payments memory leak",
+            "shift": "Shift B (Bengaluru)",
+            "conditions": "prod-canary-2000rps",
+            "hypothesis": "Unbounded _SESSION_CACHE in auth_middleware.py retains SessionContext objects indefinitely on transient retry storms",
+            "action": "Replaced unbounded _SESSION_CACHE dict with TTLCache(maxsize=50000, ttl=300) in services/auth/auth_middleware.py",
+            "outcome": "worked",
+            "reason": "RSS stabilized at 480MB over a 2-hour 2,000 RPS soak test with zero OOMs",
+            "conclusion": "Unbounded Auth middleware session cache was the root cause of the memory leak",
+            "next_suspect": "None (resolved - roll out bounded TTLCache across all auth-middleware services)",
+            "text": "Replaced unbounded _SESSION_CACHE with TTLCache(maxsize=50000, ttl=300) in services/auth/auth_middleware.py (commit f31a88b). Memory held flat at 480MB for 2 hours at 2,000 RPS!"
+          }
+        }
+      ]
+    },
+    {
+      "id": "auth-token-storm",
+      "title": "Auth Middleware JWKS Key Rotation Retry Storm",
+      "service": "auth-middleware",
+      "severity": "SEV-2",
+      "status": "active",
+      "started_at_utc": "2026-11-03T04:00:00Z",
+      "estimated_hours_per_dead_end": 2.0,
+      "events": [
+        {
+          "id": "evt-at-101",
+          "incident_id": "auth-token-storm",
+          "day": 2,
+          "attempt_group_id": "att-at-day2-jwks-timeout",
+          "source": "band",
+          "actor": "Maya",
+          "site": "Seattle",
+          "timestamp_utc": "2026-11-03T05:10:00Z",
+          "type": "room_message",
+          "payload": {
+            "message_id": "band-msg-104",
+            "commit": "7b2e19c",
+            "files": ["services/auth/jwks_client.py"],
+            "shift": "Shift A (Seattle)",
+            "hypothesis": "Lowering JWKS HTTP timeout will clear stuck auth workers during IdP key rotation",
+            "action": "Lowered JWKS_FETCH_TIMEOUT from 2000ms to 250ms in services/auth/jwks_client.py",
+            "outcome": "failed",
+            "reason": "250ms timeout triggered 8x synchronous retry amplification against IdP endpoint",
+            "conclusion": "Tightening JWKS timeout without singleflight coalescing worsens the retry storm",
+            "next_suspect": "Add singleflight lock + stale-while-revalidate caching in jwks_client.py",
+            "text": "Lowered JWKS_FETCH_TIMEOUT to 250ms (commit 7b2e19c). Failed: caused an 8x retry storm against the IdP. Next shift should implement singleflight coalescing in jwks_client.py."
+          }
+        }
+      ]
+    },
+    {
+      "id": "redis-failover-stall",
+      "title": "Redis Sentinel Failover READONLY Stalled Writes",
+      "service": "redis",
+      "severity": "SEV-2",
+      "status": "monitoring",
+      "started_at_utc": "2026-11-04T09:00:00Z",
+      "estimated_hours_per_dead_end": 2.0,
+      "events": [
+        {
+          "id": "evt-rf-101",
+          "incident_id": "redis-failover-stall",
+          "day": 5,
+          "attempt_group_id": "att-rf-day5-sentinel-reconnect",
+          "source": "band",
+          "actor": "Liam",
+          "site": "London",
+          "timestamp_utc": "2026-11-04T10:30:00Z",
+          "type": "room_message",
+          "payload": {
+            "message_id": "band-msg-201",
+            "commit": "91a0e4d",
+            "files": ["config/redis.yml", "services/payments/redis_pool.py"],
+            "shift": "Shift C (London)",
+            "hypothesis": "Increasing Redis socket timeout will allow Sentinel failover to complete transparently",
+            "action": "Raised REDIS_TIMEOUT to 1500ms during Sentinel promotion",
+            "outcome": "failed",
+            "reason": "Pooled connections remained pinned to the demoted replica returning READONLY errors",
+            "conclusion": "Timeout tuning does not disconnect stale READONLY sockets; explicit disconnect_on_readonly=True is required",
+            "next_suspect": "Enable disconnect_on_readonly in redis_pool.py",
+            "text": "Raising REDIS_TIMEOUT to 1500ms (commit 91a0e4d) did not recover stalled writes after Sentinel failover. Pooled connections stay pinned to the old replica."
+          }
+        }
+      ]
+    }
+  ]
+}
+
