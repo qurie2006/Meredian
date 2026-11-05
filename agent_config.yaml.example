@@ -3,3 +3,4 @@
 meredian_agent:
   room_id: "<YOUR_BAND_ROOM_ID>"
   api_key: "<YOUR_BAND_API_KEY>"
+
