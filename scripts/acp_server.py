@@ -57,7 +57,7 @@ def handle_session_prompt(req_id: Any, params: dict[str, Any]) -> None:
         with httpx.Client(timeout=4.0) as client:
             if "briefing" in prompt_text.lower() or "state" in prompt_text.lower() or "suspect" in prompt_text.lower():
                 b = client.get(f"{API_BASE}/briefing/payments-memleak").json()
-                answer = f"📋 Meredian Briefing:\n{b.get('headline')}\n\nLeading Suspect: {b.get('leading_suspect')}\nRecommended First Step: {b.get('recommended_first_step')}"
+                answer = f"Meredian Briefing:\n{b.get('headline')}\n\nLeading Suspect: {b.get('leading_suspect')}\nRecommended First Step: {b.get('recommended_first_step')}"
             else:
                 chk = client.post(
                     f"{API_BASE}/check",
@@ -69,7 +69,7 @@ def handle_session_prompt(req_id: Any, params: dict[str, Any]) -> None:
                         "diff_or_command": prompt_text,
                     },
                 ).json()
-                answer = f"🔍 Meredian Verdict: {chk.get('verdict', '').upper()} ({chk.get('policy_action', '')})\n{chk.get('what_was_tried', '')}\nNext: {chk.get('suggested_next', '')}"
+                answer = f"Meredian Verdict: {chk.get('verdict', '').upper()} ({chk.get('policy_action', '')})\n{chk.get('what_was_tried', '')}\nNext: {chk.get('suggested_next', '')}"
     except Exception as exc:
         answer = f"Meredian memory bot is active: {exc}"
 

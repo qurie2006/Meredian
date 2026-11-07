@@ -6,8 +6,15 @@ meredian_exec() {
   local incident="${MEREDIAN_INCIDENT:-payments-memleak}"
   local actor="${MEREDIAN_ACTOR:-Aarav}"
   local site="${MEREDIAN_SITE:-Bengaluru}"
+  local python_bin="${MEREDIAN_PYTHON:-python3}"
 
-  python -c "
+  if [ -x ".venv/bin/python" ]; then
+    python_bin=".venv/bin/python"
+  elif [ -n "$VIRTUAL_ENV" ] && [ -x "$VIRTUAL_ENV/bin/python" ]; then
+    python_bin="$VIRTUAL_ENV/bin/python"
+  fi
+
+  "$python_bin" -c "
 import sys, httpx
 resp = httpx.post('$api_url/check', json={
     'incident_id': '$incident',

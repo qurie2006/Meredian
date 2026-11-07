@@ -27,13 +27,37 @@ class HindsightMemoryWrapper:
     def ensure_bank_configured(self, bank_id: str) -> BankConfig:
         config = BankConfig(bank_id=bank_id)
         if bank_id not in self._configured_banks:
+            if hasattr(self.client, "configure_bank"):
+                self.client.configure_bank(
+                    bank_id=bank_id,
+                    mission=config.mission,
+                    directives=config.directives,
+                    disposition=config.disposition,
+                )
+            self._configured_banks.add(bank_id)
+        return config
+
+    def configure_bank(
+        self,
+        bank_id: str,
+        mission: Optional[str] = None,
+        directives: Optional[list[str]] = None,
+        disposition: Optional[str] = None,
+    ) -> BankConfig:
+        config = BankConfig(
+            bank_id=bank_id,
+            mission=mission or BankConfig(bank_id=bank_id).mission,
+            directives=directives or BankConfig(bank_id=bank_id).directives,
+            disposition=disposition or BankConfig(bank_id=bank_id).disposition,
+        )
+        if hasattr(self.client, "configure_bank"):
             self.client.configure_bank(
                 bank_id=bank_id,
                 mission=config.mission,
                 directives=config.directives,
                 disposition=config.disposition,
             )
-            self._configured_banks.add(bank_id)
+        self._configured_banks.add(bank_id)
         return config
 
     def retain_attempt(

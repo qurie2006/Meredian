@@ -1,0 +1,56 @@
+name: Meredian Institutional Memory PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  meredian-interceptor:
+    name: "Check for Prior Shift Dead Ends"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Extract PR Changed Files & Diff Summary
+        id: diff
+        run: |
+          DIFF_SUMMARY=$(git diff HEAD~1 HEAD --name-only | tr '\n' ' ')
+          echo "files=$DIFF_SUMMARY" >> $GITHUB_OUTPUT
+          FIRST_FILE=$(git diff HEAD~1 HEAD --name-only | head -n 1)
+          echo "first_file=$FIRST_FILE" >> $GITHUB_OUTPUT
+
+      - name: Run Meredian Memory Check
+        id: meredian
+        run: |
+          python -m pip install httpx
+          python scripts/github_pr_checker.py \
+            --api-url "${{ vars.MEREDIAN_API_URL || 'http://127.0.0.1:8000' }}" \
+            --incident "${{ vars.ACTIVE_INCIDENT_ID || 'payments-memleak' }}" \
+            --file "${{ steps.diff.outputs.first_file || 'config/redis.yml' }}" \
+            --action "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --actor "${{ github.actor }}" \
+            --output-md pr_comment.md
+
+      - name: Post Sticky Comment on PR
+        if: always() && hashFiles('pr_comment.md') != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('pr_comment.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+

@@ -173,22 +173,22 @@ class BriefingGenerator:
     @staticmethod
     def format_for_band(briefing: Briefing) -> str:
         lines = [
-            f"📋 **Meredian Shift-Start Briefing — `{briefing.incident_id}` (Day {briefing.day})**",
+            f"**Meredian Shift-Start Briefing — `{briefing.incident_id}` (Day {briefing.day})**",
             f"**Summary:** {briefing.headline}",
         ]
         if briefing.ruled_out:
-            lines.append("\n🚫 **Ruled Out (Do Not Repeat):**")
+            lines.append("\n**Ruled Out (Do Not Repeat):**")
             for item in briefing.ruled_out:
                 refs = ", ".join(item.evidence_refs)
                 lines.append(
                     f"- {item.hypothesis_or_action} — tried by {item.who} ({item.site}) [{refs}]. Reason: {item.reason}"
                 )
         if briefing.conflicts:
-            lines.append("\n⚠️ **Cross-Site Condition Conflicts:**")
+            lines.append("\n**Cross-Site Condition Conflicts:**")
             for c in briefing.conflicts:
                 lines.append(f"- {c.summary}")
-        lines.append(f"\n🎯 **Leading Suspect:** {briefing.leading_suspect}")
+        lines.append(f"\n**Leading Suspect:** {briefing.leading_suspect}")
         lines.append(f"   *{briefing.leading_suspect_rationale}*")
-        lines.append(f"\n🚀 **Recommended First Step:** {briefing.recommended_first_step}")
+        lines.append(f"\n**Recommended First Step:** {briefing.recommended_first_step}")
         return "\n".join(lines)
 

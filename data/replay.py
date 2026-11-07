@@ -20,11 +20,13 @@ class ReplayEngine:
         memory: HindsightMemoryWrapper,
         band_client: Optional[BandAgentClient] = None,
         data_file: Optional[str] = None,
+        store: Any = None,
     ) -> None:
         self.collector = collector
         self.builder = attempt_builder
         self.memory = memory
         self.band = band_client
+        self.store = store
         self.data_path = Path(data_file or Path(__file__).parent / "incidents.json")
 
     def load_world(self) -> dict[str, Any]:
@@ -35,6 +37,10 @@ class ReplayEngine:
         for inc in world.get("incidents", []):
             if inc["id"] == incident_id:
                 return inc
+        if self.store and hasattr(self.store, "get_custom_incident"):
+            custom = self.store.get_custom_incident(incident_id)
+            if custom:
+                return custom
         return {
             "id": incident_id,
             "title": incident_id,
@@ -48,10 +54,19 @@ class ReplayEngine:
     def list_incidents_meta(self) -> list[dict[str, Any]]:
         world = self.load_world()
         out = []
+        seen_ids = set()
         for inc in world.get("incidents", []):
             meta = {k: v for k, v in inc.items() if k != "events"}
             meta["event_count"] = len(inc.get("events", []))
             out.append(meta)
+            seen_ids.add(inc["id"])
+        if self.store and hasattr(self.store, "get_custom_incidents"):
+            for custom in self.store.get_custom_incidents():
+                if custom["id"] not in seen_ids:
+                    custom_meta = dict(custom)
+                    custom_meta["event_count"] = len(self.store.get_events(custom["id"]))
+                    out.append(custom_meta)
+                    seen_ids.add(custom["id"])
         return out
 
     def get_events_for_incident(self, incident_id: str, up_to_day: int = 5) -> list[Event]:

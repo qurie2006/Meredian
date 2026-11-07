@@ -6,7 +6,7 @@ import threading
 from pathlib import Path
 from typing import Any, Optional
 
-from attempts.schemas import Attempt, Event, InterceptionRecord
+from attempts.schemas import Attempt, Event, InterceptionRecord, utc_now_iso
 
 
 class StateStore:
@@ -49,6 +49,15 @@ class StateStore:
                 CREATE TABLE IF NOT EXISTS kv_state (
                     key TEXT PRIMARY KEY,
                     value_json TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS custom_incidents (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    service TEXT NOT NULL,
+                    severity TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at_utc TEXT NOT NULL,
+                    data_json TEXT NOT NULL
                 );
                 """
             )
@@ -154,4 +163,32 @@ class StateStore:
                 conn.execute("DELETE FROM events")
                 conn.execute("DELETE FROM attempts")
                 conn.execute("DELETE FROM interceptions")
+
+    def save_custom_incident(self, incident_meta: dict[str, Any]) -> None:
+        with self._lock, self._Connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO custom_incidents (id, title, service, severity, status, created_at_utc, data_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    incident_meta["id"],
+                    incident_meta.get("title", incident_meta["id"]),
+                    incident_meta.get("service", "core"),
+                    incident_meta.get("severity", "SEV-2"),
+                    incident_meta.get("status", "active"),
+                    incident_meta.get("created_at_utc", utc_now_iso()),
+                    json.dumps(incident_meta),
+                ),
+            )
+
+    def get_custom_incidents(self) -> list[dict[str, Any]]:
+        with self._lock, self._Connect() as conn:
+            rows = conn.execute("SELECT data_json FROM custom_incidents ORDER BY created_at_utc DESC").fetchall()
+            return [json.loads(r["data_json"]) for r in rows]
+
+    def get_custom_incident(self, incident_id: str) -> Optional[dict[str, Any]]:
+        with self._lock, self._Connect() as conn:
+            row = conn.execute("SELECT data_json FROM custom_incidents WHERE id = ?", (incident_id,)).fetchone()
+            return json.loads(row["data_json"]) if row else None
 

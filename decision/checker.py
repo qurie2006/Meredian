@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from typing import Any, Optional
 
 from attempts.schemas import CheckActionRequest, Verdict
@@ -59,6 +60,7 @@ class ActionChecker:
         req: CheckActionRequest,
         global_memory_enabled: bool = True,
     ) -> tuple[str, Verdict]:
+        t0 = time.perf_counter()
         effective_memory_enabled = (
             req.memory_enabled if req.memory_enabled is not None else global_memory_enabled
         )
@@ -73,6 +75,8 @@ class ActionChecker:
                 policy_action="silent",
                 memory_enabled=False,
                 memory_status="disabled",
+                latency_ms=round((time.perf_counter() - t0) * 1000, 2),
+                engine_path="Local Mock Engine (Memory Bypassed)",
             )
             return normalized_query, verdict
 
@@ -94,11 +98,15 @@ class ActionChecker:
                 policy_action="silent",
                 memory_enabled=True,
                 memory_status=mem_status,
+                latency_ms=round((time.perf_counter() - t0) * 1000, 2),
+                engine_path="Groq LPU + Vectorize Hindsight (400-token budget)",
             )
             return normalized_query, verdict
 
         verdict = self._JudgeAction(req, normalized_query, facts, observations, mem_status)
         verdict = self._ApplyPolicy(verdict)
+        verdict.latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        verdict.engine_path = "Groq LPU + Vectorize Hindsight (400-token budget)"
         return normalized_query, verdict
 
     def _JudgeAction(

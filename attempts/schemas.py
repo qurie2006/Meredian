@@ -124,6 +124,8 @@ class Verdict(BaseModel):
     memory_status: str = "ready"
     interception_id: Optional[str] = None
     band_message: Optional[str] = None
+    latency_ms: Optional[float] = None
+    engine_path: Optional[str] = "Groq LPU + Vectorize Hindsight (400-token budget)"
 
 
 class CheckActionRequest(BaseModel):

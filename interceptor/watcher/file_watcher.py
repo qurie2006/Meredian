@@ -14,7 +14,7 @@ TRACKED_SUFFIXES = {".yml", ".yaml", ".py", ".json", ".toml", ".conf"}
 
 def notify_desktop(title: str, message: str) -> None:
     print("\n" + "=" * 76)
-    print(f"🚨 {title}")
+    print(f"[ALERT] {title}")
     print("-" * 76)
     print(message)
     print("=" * 76 + "\n")

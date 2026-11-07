@@ -16,8 +16,18 @@ export PYTHONPATH=.
 MEREDIAN_HOST="${MEREDIAN_API_HOST:-127.0.0.1}"
 MEREDIAN_PORT="${MEREDIAN_API_PORT:-8000}"
 
-echo "[Meredian] Starting Local Hindsight Server on http://127.0.0.1:8888 ..."
-python3 scripts/hindsight_local_server.py >/dev/null 2>&1 &
+if [ -x ".venv/bin/python" ]; then
+  PYTHON_CMD=".venv/bin/python"
+elif [ -n "$VIRTUAL_ENV" ] && [ -x "$VIRTUAL_ENV/bin/python" ]; then
+  PYTHON_CMD="$VIRTUAL_ENV/bin/python"
+elif command -v python3.11 >/dev/null 2>&1; then
+  PYTHON_CMD="python3.11"
+else
+  PYTHON_CMD="python3"
+fi
+
+echo "[Meredian] Starting Local Hindsight Server on http://127.0.0.1:8888 using ${PYTHON_CMD} ..."
+"$PYTHON_CMD" scripts/hindsight_local_server.py >/dev/null 2>&1 &
 HINDSIGHT_PID=$!
 
 cleanup() {
@@ -36,5 +46,5 @@ elif command -v xdg-open >/dev/null 2>&1; then
 fi
 
 echo "[Meredian] Starting Meredian API + Web Dashboard on ${URL} ..."
-python3 -m uvicorn api.main:app --host "$MEREDIAN_HOST" --port "$MEREDIAN_PORT" --reload
+"$PYTHON_CMD" -m uvicorn api.main:app --host "$MEREDIAN_HOST" --port "$MEREDIAN_PORT" --reload
 
