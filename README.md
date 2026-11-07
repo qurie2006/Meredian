@@ -1,4 +1,4 @@
-# Meredian — Follow-the-Sun Engineering Memory
+# Meredian — Follow the Sun Engineering Memory
 
 **Meredian** watches what each engineering shift tries, remembers what failed and why in **Hindsight**, and stops the next shift from repeating a dead end.
 
